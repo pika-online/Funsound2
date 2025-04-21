@@ -1,0 +1,2 @@
+modelscope==1.10
+fuansr

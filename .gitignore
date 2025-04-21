@@ -1,0 +1,7 @@
+ffmpeg
+logs
+cache
+models
+__pycache__
+*.pyc
+funasr_models
