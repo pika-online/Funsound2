@@ -58,7 +58,7 @@ async def asr(uri, file_path, uid='test_user'):
         # Step 3: 开始转写
         message = {
             "uid": uid,
-            "task": "funasr",
+            "task": "whisper",
             "data": {
                 "source_language": "Chinese",
                 "target_language": "English",
@@ -94,8 +94,10 @@ async def asr(uri, file_path, uid='test_user'):
             print(string_progress(progress))
             print("-"*100)
             for _id in display:
-                print(f"{_id} | time:{display[_id]['start']:6.2f} - {display[_id]['end']:6.2f}, text:({display[_id]['text']}), "+\
-                      f"trans:({display[_id]['trans']}), role:{display[_id]['role']}")
+                print(f"id: {_id} | time:{display[_id]['start']:6.2f} - {display[_id]['end']:6.2f} | role:{display[_id]['role']}")
+                print(f"text: {display[_id]['text']}")
+                print(f"trans: {display[_id]['trans']}")
+                print("-"*50)
             
             if msg == '<END>':
                 break

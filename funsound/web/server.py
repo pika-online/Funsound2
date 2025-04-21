@@ -131,8 +131,7 @@ async def handle_client(websocket):
 
                             demacia = Demacia(
                                 taskId=generate_random_string(10),
-                                engine_asr=engine_paraformer,
-                                engine_punc=engine_punc,
+                                engine_asr=engine_whisper,
                                 engine_sv=engine_sv,
                                 translator=Translator(llm_account) if llm_account['api_key'] else None,
                                 messager=messager,

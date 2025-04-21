@@ -123,8 +123,9 @@ class Diarization:
 
     async def run(self,audio_file):
 
+        # 后台翻译
         trans_task = None
-        if self.use_trans:
+        if self.use_trans and self.translator:
             trans_task = asyncio.create_task(self._backend_trans())
 
         audio_data = audio_i2f(read_audio_file(audio_file))
@@ -135,6 +136,7 @@ class Diarization:
         async for sentence in self.sentence_generator(audio_data):
             sentenceId = sentence['id']
             sentenceAsr = sentence['text']
+            if "请不吝点赞" in  sentenceAsr:continue
             progress = sentence['end']/audio_seconds
             self.output_asr = [sentence['start'],sentence['end'],sentence['text']]
             await self.messager.send('success',msg='<ASR>',progress=progress,completed=False,result=sentence)
