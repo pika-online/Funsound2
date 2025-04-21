@@ -7,7 +7,7 @@ def clear():
     os.system('clear')
 
 def string_progress(val):
-    assert val<=1
+    # assert val<=1
     n = int(val*20)
     return "#" * n + f"({val*100:.1f}%)"
 
@@ -58,7 +58,7 @@ async def asr(uri, file_path, uid='test_user'):
         # Step 3: 开始转写
         message = {
             "uid": uid,
-            "task": "whisper",
+            "task": "funasr",
             "data": {
                 "source_language": "Chinese",
                 "target_language": "English",
