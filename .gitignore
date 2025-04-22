@@ -7,3 +7,4 @@ __pycache__
 funasr_models
 *.log
 prompt.txt
+config.py
