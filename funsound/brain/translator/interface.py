@@ -1,4 +1,3 @@
-from ..account import llm_account
 from ..agent import Agent
 from funsound.utils import *
 
@@ -47,6 +46,8 @@ class Translator(Agent):
         return response.json().get('choices', [{}])[0].get('message', {}).get('content', '')
 
 if __name__ == "__main__":
+
+    from funsound.config import llm_account
     translator = Translator(account=llm_account)
     # content = \
     # {

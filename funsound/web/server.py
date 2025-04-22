@@ -70,7 +70,7 @@ async def handle_client(websocket):
                     task = _message.get('task', '')
                     data = _message.get('data', {})
                     if not userId:
-                        userId = uid if uid else address
+                        userId = uid if uid else get_current_time().replace(" ","_")
                         cache_dir = f"{CACHE_DIR}/{userId}"
                         USERS[userId] = User(userId,cache_dir=cache_dir)
                         messager.log_file = f"{USERS[userId].cache_dir}/log.txt"

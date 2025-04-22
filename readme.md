@@ -53,11 +53,10 @@ python client.py
 
 ---
 
-## 5. 高级功能
-
+## 5. 高级
+Funsound交互逻辑如图：
 <img src="./img/framework.png" alt="Funsound Framework" width="300" height="200">
 
-### 可用功能：
 - **funsound.brain.translator**: 基于大语言模型（LLM）的跨语言翻译
 - **funsound.engine**: 并发引擎接口
 - **funsound.pipeline**: Funsound 业务接口

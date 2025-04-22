@@ -146,7 +146,7 @@ class Diarization:
             self.output_asr = [sentence['start'],sentence['end'],sentence['text']]
             await self.messager.send('success',msg='<ASR>',progress=progress,completed=False,result=sentence)
             # translate
-            if self.use_trans:
+            if self.use_trans and self.translator:
                 await self.trans_task.put([sentenceId, sentenceAsr])
             # embedding
             if self.use_sv and self.engine_sv:
