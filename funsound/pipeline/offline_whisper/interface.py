@@ -5,6 +5,7 @@ from funsound.brain.translator.interface import Translator
 from funsound.utils import *
 from funasr.models.campplus.cluster_backend import ClusterBackend,UmapHdbscan
 from funsound.pipeline.base import Diarization,recv_one,recv_many
+from funsound.brain.translator.languages import LANGUAGES_WHISPER
 from funsound.config import *
 
 
@@ -30,7 +31,7 @@ class Demacia(Diarization):
         asrId = generate_random_string(10)
         self.engine_asr.submit(taskId=asrId,input_data=audio_data,config={'hotwords':self.hotwords,
                                                                           'task':'transcribe',
-                                                                          'language':self.source_language})
+                                                                          'language':LANGUAGES_WHISPER[self.source_language] if self.source_language else None})
         sentence_count = 0
         async for sentence in recv_many(self.engine_asr,asrId):
             sentenceId = f"{self.taskId}_{sentence_count}"

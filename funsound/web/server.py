@@ -74,7 +74,7 @@ async def handle_client(websocket):
                         cache_dir = f"{CACHE_DIR}/{userId}"
                         USERS[userId] = User(userId,cache_dir=cache_dir)
                         messager.log_file = f"{USERS[userId].cache_dir}/log.txt"
-                        mkdir(messager.log_file)
+                        mkfile(messager.log_file)
                     messager.task = task
                     messager.write_log(f"Recv(Text) <<< {message}")
 

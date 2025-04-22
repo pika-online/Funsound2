@@ -101,3 +101,5 @@ LANGUAGES_WHISPER = {
     "Chinese": "zh",
     "Cantonese": "yue"
 }
+
+print(list(LANGUAGES_WHISPER.keys()))

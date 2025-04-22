@@ -5,3 +5,5 @@ models
 __pycache__
 *.pyc
 funasr_models
+*.log
+prompt.txt

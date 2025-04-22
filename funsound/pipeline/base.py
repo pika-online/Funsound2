@@ -48,7 +48,7 @@ class Diarization:
         self.hotwords = hotwords
         self.use_sv = use_sv
         self.use_trans = use_trans
-        self.source_language = source_language
+        self.source_language = None if not source_language else source_language
         self.target_language = target_language
         if use_trans:
             assert self.source_language in list(LANGUAGES_WHISPER.keys()) + [None]

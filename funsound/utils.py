@@ -116,7 +116,7 @@ class Messager:
                 f.write(f"[{now_str}]{content}\n")
                 
 
-    async def send(self, status: str, msg: str, progress:float = 1., completed:bool=True, result=None):
+    async def send(self, status: str, msg: str, progress:float = None, completed:bool=True, result=None):
         """
         给客户端发送 JSON 格式的数据，并将发送的信息记录到日志文件中。
         """

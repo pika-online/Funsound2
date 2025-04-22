@@ -12,7 +12,7 @@ def string_progress(val):
     return "#" * n + f"({val*100:.1f}%)"
 
 
-supported_languages = {
+SUPPORTED_TRANSLATE_LANGUAGES = {
     'funasr':{
         'source_language': ['Chinese'],
         'target_language': ['Chinese','English, Japanese','Korean'],
@@ -46,12 +46,12 @@ async def asr(uri,
         }
         await websocket.send(json.dumps(message))
         response = json.loads(await websocket.recv())
-        print("[Server]:", response)
         if response['status']=='error':
+            print(f"上传错误:{response['msg']}")
             return
 
 
-        # Step 2: 打开并发送文件数据
+        # Step 2: 开始上传文件
         file_size = os.path.getsize(file_path)
         chunk_size = 1024 * 1024
         uploading = 0
@@ -64,25 +64,25 @@ async def asr(uri,
                 await websocket.send(chunk)
                 response = json.loads(await websocket.recv())
                 if response['status']=='error':
+                    print(f"上传错误:{response['msg']}")
                     return
                 clear()
                 print(string_progress(uploading/file_size))
-                print(f"[Server]:{response['msg']}")
 
-        await websocket.send(b'')
+        await websocket.send(b'') # 上传完毕
         response = json.loads(await websocket.recv())
         if response['status']=='error':
-                    return
+            print(f"上传错误:{response['msg']}")
+            return
         clear()
         print(string_progress(1))
-        print(f"[Server]:{response['msg']}")
+
 
 
         # Step 3: 开始转写
         if use_trans:
-            assert source_language in supported_languages[pipeline]['source_language']
-            assert target_language in supported_languages[pipeline]['target_language']
-
+            assert source_language in SUPPORTED_TRANSLATE_LANGUAGES[pipeline]['source_language']
+            assert target_language in SUPPORTED_TRANSLATE_LANGUAGES[pipeline]['target_language']
 
         message = {
             "uid": uid,
@@ -101,7 +101,9 @@ async def asr(uri,
         while 1:
             response = json.loads(await websocket.recv())
             if response['status']=='error':
-                    return
+                print(f"识别错误:{response['msg']}")
+                return
+            
             progress = response['progress'] if response['progress'] else progress
             result = response['result'] 
             msg = response['msg'] 
@@ -135,11 +137,9 @@ async def asr(uri,
 
 
 
-
-
 if __name__ == "__main__":
 
-    uri = "ws://localhost:5000/ws"  # 根据你的服务端端口修改
+    uri = "ws://js1.blockelite.cn:15576/"  # 根据你的服务端端口修改
     file_path = "test1.wav"    # 替换成你要上传的文件路径
 
     asyncio.run(asr(uri, 
