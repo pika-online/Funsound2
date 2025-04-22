@@ -32,6 +32,8 @@ class Translator(Agent):
 """
 
     def translate(self, source_language, target_language, content):
+        if source_language is None:
+            source_language = '未知语言'
         messages = [{'role':'system', "content": self.system_prompt}]
         # 将用户输入转换为标准JSON字符串，确保双引号
         user_input = json.dumps(content, ensure_ascii=False)
@@ -46,15 +48,23 @@ class Translator(Agent):
 
 if __name__ == "__main__":
     translator = Translator(account=llm_account)
-    content = {
-        "0": '大家好,',
-        "1": '我是NBA球员科比布莱恩特。',
-        "2": '我从小热爱篮球，',
-        "3": '一天不打浑身难受。'
-    }
+    # content = \
+    # {
+    #     "0": '大家好,',
+    #     "1": '我是NBA球员科比布莱恩特。',
+    #     "2": '我从小热爱篮球，',
+    #     "3": '一天不打浑身难受。'
+    # }
+    content = \
+    {
+        "0": "Mbote na bino nyonso,",
+        "1": "Nazo benga ngai Kobe Bryant, mosani ya NBA.",
+        "2": "Nalingaka mingi basketbol banda nazalaki mwana moke,",
+        "3": "Soki naleki mokolo moko na kosala te, nazalaka na pasi mingi."
+        }
     json_str = translator.translate(
-        source_language='Chinese',
-        target_language='English',
+        source_language=None,
+        target_language='Chinese',
         content=content  # 注意这里直接传字典，由方法内部转换
     )
     json_str = extract_json(json_str)

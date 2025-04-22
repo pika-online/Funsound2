@@ -5,13 +5,34 @@ import os
 
 def clear():
     os.system('clear')
+    # os.system('cls') # windows
 
 def string_progress(val):
-    # assert val<=1
     n = int(val*20)
     return "#" * n + f"({val*100:.1f}%)"
 
-async def asr(uri, file_path, uid='test_user'):
+
+supported_languages = {
+    'funasr':{
+        'source_language': ['Chinese'],
+        'target_language': ['Chinese','English, Japanese','Korean'],
+    },
+    'whisper':{
+        'source_language': [None,'Chinese','English, Japanese','Korean'],
+        'target_language': ['Chinese','English', 'Japanese','Korean'],
+    },
+}
+
+async def asr(uri, 
+              file_path, 
+              uid='test_user',
+              pipeline='funasr',
+              hotwords = [],
+              use_sv = False,
+              use_trans = False,
+              source_language=None, 
+              target_language=None,):
+    
     async with websockets.connect(uri, max_size=None) as websocket:
         filename = os.path.basename(file_path)
 
@@ -50,21 +71,28 @@ async def asr(uri, file_path, uid='test_user'):
 
         await websocket.send(b'')
         response = json.loads(await websocket.recv())
+        if response['status']=='error':
+                    return
         clear()
         print(string_progress(1))
         print(f"[Server]:{response['msg']}")
 
 
         # Step 3: 开始转写
+        if use_trans:
+            assert source_language in supported_languages[pipeline]['source_language']
+            assert target_language in supported_languages[pipeline]['target_language']
+
+
         message = {
             "uid": uid,
-            "task": "funasr",
+            "task": pipeline,
             "data": {
-                "source_language": "Chinese",
-                "target_language": "English",
-                "use_sv": True,
-                "use_trans": True,
-                "hotwords": []
+                "source_language": source_language,
+                "target_language": target_language,
+                "use_sv": use_sv,
+                "use_trans": use_trans,
+                "hotwords": hotwords
             }
         }
         await websocket.send(json.dumps(message))
@@ -72,9 +100,12 @@ async def asr(uri, file_path, uid='test_user'):
         display = {}
         while 1:
             response = json.loads(await websocket.recv())
+            if response['status']=='error':
+                    return
             progress = response['progress'] if response['progress'] else progress
             result = response['result'] 
             msg = response['msg'] 
+            # 实时asr
             if msg == '<ASR>':
                 _id = result['id']
                 _start = result['start']
@@ -107,7 +138,13 @@ async def asr(uri, file_path, uid='test_user'):
 
 
 if __name__ == "__main__":
+
     uri = "ws://localhost:5000/ws"  # 根据你的服务端端口修改
     file_path = "test1.wav"    # 替换成你要上传的文件路径
 
-    asyncio.run(asr(uri, file_path))
+    asyncio.run(asr(uri, 
+                    file_path, 
+                    pipeline='whisper',
+                    use_sv=True,
+                    use_trans=True,
+                    target_language='English'))

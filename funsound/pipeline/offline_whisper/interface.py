@@ -28,8 +28,9 @@ class Demacia(Diarization):
         audio_seconds = audio_size/self.sr
 
         asrId = generate_random_string(10)
-        self.engine_asr.submit(taskId=asrId,input_data=audio_data,config={'hotwords':self.hotwords})
-
+        self.engine_asr.submit(taskId=asrId,input_data=audio_data,config={'hotwords':self.hotwords,
+                                                                          'task':'transcribe',
+                                                                          'language':self.source_language})
         sentence_count = 0
         async for sentence in recv_many(self.engine_asr,asrId):
             sentenceId = f"{self.taskId}_{sentence_count}"

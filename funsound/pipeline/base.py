@@ -26,6 +26,11 @@ async def recv_many(engine:Engine,taskId):
         if signal == '<PROCESS>':
             yield content
 
+
+
+
+
+
 class Diarization:
     def __init__(self,
                  taskId,
@@ -43,11 +48,11 @@ class Diarization:
         self.hotwords = hotwords
         self.use_sv = use_sv
         self.use_trans = use_trans
-        assert source_language in LANGUAGES_WHISPER
-        assert target_language in LANGUAGES_WHISPER
         self.source_language = source_language
         self.target_language = target_language
-        
+        if use_trans:
+            assert self.source_language in list(LANGUAGES_WHISPER.keys()) + [None]
+            assert self.target_language in list(LANGUAGES_WHISPER.keys())
 
         self.cb_model = ClusterBackend()
         self.translator = translator

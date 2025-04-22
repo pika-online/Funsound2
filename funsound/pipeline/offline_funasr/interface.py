@@ -21,13 +21,12 @@ class Noxus(Diarization):
                  hotwords = [],
                  use_sv=False, 
                  use_trans=False, 
-                 source_language=None, 
+                 source_language="Chinese", 
                  target_language=None):
         super().__init__(taskId, engine_sv, translator,messager, hotwords, use_sv, use_trans, source_language, target_language)
         self.engine_asr = engine_asr
         self.engine_punc = engine_punc
         self.breaker = PuncBreaker(self.engine_punc)
-    
 
     async def sentence_generator(self, audio_data):
         audio_size = len(audio_data)
