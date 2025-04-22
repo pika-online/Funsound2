@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Funsound 语音识别</title>
+  <link rel="icon" href="/assets/images/favicon.png" type="image/png">
+  <!-- ——─  DARK THEME + BASIC LAYOUT  ─—— -->
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --fg: #e5e5e5;
+      --accent: #3a8bff;
+      --green: #02c26a;
+      --border: #444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      /* min-height: 100vh; */
+      height: 100vh;
+    }
+
+    header {
+      padding: 1.2rem 0;
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), #a445ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header img {
+      height: 50px; /* Set the size of the logo */
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 1rem; 
+      height: 80%;
+    }
+
+    .wrapper {
+      display: flex;
+      width: 95%;
+      max-width: 1500px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .left,
+    .right {
+      padding: 1rem;
+      /* height: 900px; */
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 3;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+     
+    }
+
+    .right {
+      flex: 7;
+      display: flex;
+      flex-direction: column;
+    
+    }
+
+    button,
+    input[type=radio],
+    input[type=checkbox],
+    select {
+      cursor: pointer;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input[type=file] {
+      display: none;
+    }
+
+    label.file-label {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+      color: var(--accent);
+    }
+
+    video {
+      width: 100%;
+      height: 30%;
+      background: #000;
+      border-radius: 8px;
+    }
+
+    /* —— 识别配置（新版栅格布局） —— */
+    .config {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.3rem;
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      grid-auto-rows: auto;
+      gap: 0.4rem 0.8rem;
+    }
+
+    .config h3 {
+      grid-column: 1 / -1;
+      margin-bottom: 0.4rem;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    .config label,
+    .config span,
+    .config select,
+    .config textarea {
+      font-size: 0.95rem;
+    }
+
+    .config .full-row {
+      grid-column: 1 / -1;
+    }
+
+    .row-checkboxes {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      background: #2a2a2a;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem;
+    }
+
+    .upload-bar,
+    .asr-bar {
+      width: 100%;
+      height: 14px;
+      background: #333;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .upload-bar div,
+    .asr-bar div {
+      height: 100%;
+      width: 0%;
+      background: var(--green);
+      transition: width 0.2s;
+    }
+
+    .msg {
+      font-size: 0.9rem;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sentences {
+      flex: 1;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #2a2a2a;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.3rem;
+      font-size: 0.9rem;
+    }
+
+    tr:nth-child(odd) {
+      background: #262626;
+    }
+
+    tr:hover {
+      background: #333;
+    }
+
+    td[contenteditable] {
+      outline: none;
+    }
+
+    td input[type=number] {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: inherit;
+      text-align: center;
+    }
+
+    footer {
+      text-align: center;
+      padding: 0.6rem;
+      font-size: 0.8rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      margin: 0 0.25rem;
+      text-decoration: none;
+    }
+
+    /* —— 导出按钮 / 容器专属样式 —— */
+    .export-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .export-btn {
+      background: var(--green);
+      color: #fff;
+      padding: 0.5rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    .export-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* —— 前三个字段“播放”、“开始”、“结束”居中对齐 —— */
+    table th:nth-child(-n+3),
+    table td:nth-child(-n+3) {
+    text-align: center;
+    }
+
+    /* —— 其余字段左对齐 —— */
+    table th:nth-child(n+4),
+    table td:nth-child(n+4) {
+    text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/assets/images/favicon.png" alt="Funsound Logo"> Funsound 语音识别
+  </header>
+
+  <main>
+    <div class="wrapper">
+      <!-- ——— 左列 ——— -->
+      <div class="left">
+        <!-- 选择文件 -->
+        <div style="height:1auto;">
+          <label for="file" class="file-label">选择文件</label>
+          <input id="file" type="file" accept="audio/*,video/*">
+        </div>
+
+        <!-- 预览播放器 -->
+        <video id="player" controls ></video>
+
+        <!-- 识别配置 -->
+        <div class="config" id="config">
+          <h3>识别配置</h3>
+
+          <span>识别引擎:</span>
+          <div>
+            <label><input type="radio" name="pipeline" value="funasr" checked> funasr(中文)</label>
+            <label style="margin-left:1rem;"><input type="radio" name="pipeline" value="whisper"> whisper(多语言)</label>
+          </div>
+
+          <span>附加功能:</span>
+          <div class="row-checkboxes">
+            <label><input type="checkbox" id="use_sv"> 说话人识别</label>
+            <label><input type="checkbox" id="use_trans"> 多语言翻译</label>
+          </div>
+
+          <span>目标语言:</span>
+          <select id="tgt" style="width: 60%;"></select>
+
+          <span class="full-row">热词 (空格分隔):</span>
+          <textarea id="hot" rows="1" class="full-row"></textarea>
+        </div>
+
+        <!-- 开始识别 -->
+        <button id="start" style="height: auto;">开始识别</button>
+
+        <!-- 进度条 -->
+        <div style="height: auto;">
+          <span>上传进度</span>
+          <div class="upload-bar" id="upload"><div></div></div>
+          <span>识别进度</span>
+          <div class="asr-bar" id="asr"><div></div></div>
+        </div>
+
+        <!-- 单行消息 -->
+        <div class="msg" id="msg" style="height: auto;"></div>
+      </div>
+
+      <!-- ——— 右列 ——— -->
+      <div class="right">
+        <!-- 实时句子列表 -->
+        <div class="sentences">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:10%">▶</th>
+                <th style="width:10%">开始</th>
+                <th style="width:10%">结束</th>
+                <th style="width:10%">角色</th>
+                <th style="width:30%">识别</th>
+                <th style="width:30%">翻译</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- 导出 -->
+        <div class="export-actions">
+          <button id="expJson" class="export-btn" disabled>导出json</button>
+          <button id="expSrt" class="export-btn" disabled>导出srt</button>
+          <button id="expTxt" class="export-btn" disabled>导出txt</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    联系方式：
+    <a href="605686962@QQ.com">邮箱</a> |
+    <a href="https://github.com/pika-online/Funsound2" target="_blank">GitHub</a> |
+    <a href="https://blog.csdn.net/Ephemeroptera" target="_blank">CSDN</a>
+  </footer>
+
+  <!-- ——─  核心脚本  ─—— -->
+  <script>
+    /* ---------- 可自行增删的语言列表 ---------- */
+    const WHISPER_LANGUAGE_LIST = ["Chinese", "English", "Japanese"];
+    const SUPPORTED = {
+      funasr: { src: ["Chinese"], tgt: WHISPER_LANGUAGE_LIST },
+      whisper: { src: WHISPER_LANGUAGE_LIST, tgt: WHISPER_LANGUAGE_LIST }
+    };
+
+    /* ---------- DOM ---------- */
+    const $ = id => document.getElementById(id);
+    const qs = sel => document.querySelector(sel);
+
+    const UID = ""
+    const file = $("file");
+    const player = $("player");
+    const tgtSel = $("tgt");
+    const pipeline = () => qs("input[name=pipeline]:checked").value;
+    const transChk = $("use_trans");
+    const startBtn = $("start");
+    const uploadBar = $("upload").firstElementChild;
+    const asrBar = $("asr").firstElementChild;
+    const msgLine = $("msg");
+    const tbody = $("tbody");
+    const expJson = $("expJson");
+    const expSrt = $("expSrt");
+    const expTxt = $("expTxt");
+
+    /* ---------- 状态 ---------- */
+    let ws = null;
+    let rows = {};          // id -> row object
+    let finished = false;
+
+    /* ---------- 工具 ---------- */
+    function progress(el, val) {
+      el.style.width = (val * 100).toFixed(1) + "%";
+    }
+
+    function srtTime(sec) {
+      const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+      const m = String(Math.floor(sec % 3600 / 60)).padStart(2, "0");
+      const s = String(Math.floor(sec % 60)).padStart(2, "0");
+      const ms = String(Math.floor((sec % 1) * 1e3)).padStart(3, "0");
+      return `${h}:${m}:${s},${ms}`;
+    }
+
+    function download(blob, name) {
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(u);
+    }
+
+    /* ---------- 语言选项 ---------- */
+    function fillLang() {
+      const cfg = SUPPORTED[pipeline()];
+      tgtSel.innerHTML = "";
+      cfg.tgt.forEach(l => tgtSel.appendChild(new Option(l, l)));
+    }
+
+    // 初始化语言列表
+    fillLang();
+
+    // 当识别引擎改变时更新语言列表
+    document.querySelectorAll("input[name=pipeline]").forEach(r => r.onchange = fillLang);
+
+    // 绑定翻译按钮和目标语言下拉框
+    function updateTgtEnabled() {
+      tgtSel.disabled = !transChk.checked;
+    }
+    transChk.onchange = updateTgtEnabled;
+    updateTgtEnabled();
+
+    /* ---------- 选择文件 预览 ---------- */
+    file.onchange = () => {
+      if (file.files[0]) player.src = URL.createObjectURL(file.files[0]);
+    };
+
+    /* ---------- 句子表格渲染 ---------- */
+    function upsertRow(obj) {
+      let tr = $("row_" + obj.id);
+      if (!tr) {
+        tr = document.createElement("tr");
+        tr.id = "row_" + obj.id;
+        tr.innerHTML = `
+          <td><button class="play" data-id="${obj.id}">▶</button></td>
+          <td><input type="number" step="0.2" value="${obj.start.toFixed(2)}"></td>
+          <td><input type="number" step="0.2" value="${obj.end.toFixed(2)}"></td>
+          <td contenteditable>${obj.role ?? ""}</td>
+          <td contenteditable>${obj.text ?? ""}</td>
+          <td contenteditable>${obj.trans ?? ""}</td>`;
+        tbody.appendChild(tr);
+      } else {
+        tr.children[1].firstElementChild.value = obj.start.toFixed(2);
+        tr.children[2].firstElementChild.value = obj.end.toFixed(2);
+        if (obj.role !== undefined) tr.children[3].textContent = obj.role ?? "";
+        if (obj.text !== undefined) tr.children[4].textContent = obj.text;
+        if (obj.trans !== undefined) tr.children[5].textContent = obj.trans;
+      }
+      tr.scrollIntoView({ block: "end" });
+    }
+
+    /* 播放按钮 */
+    tbody.onclick = e => {
+      if (!e.target.classList.contains("play")) return;
+      const id = e.target.dataset.id;
+      const tr = $("row_" + id);
+      const start = parseFloat(tr.children[1].firstElementChild.value);
+      const end = parseFloat(tr.children[2].firstElementChild.value);
+      player.currentTime = start; player.play();
+      const stop = () => {
+        if (player.currentTime >= end) {
+          player.pause();
+          player.removeEventListener("timeupdate", stop);
+        }
+      };
+      player.addEventListener("timeupdate", stop);
+    };
+
+    /* ---------- WebSocket 上传 & 识别 ---------- */
+    startBtn.onclick = () => {
+      if (!file.files.length) { alert("请先选择文件"); return; }
+      initUI();
+      ws = new WebSocket("wss://funsound.cn/ws/");
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        send({ task: "upload", uid: UID, data: { filename: file.files[0].name } });
+      };
+
+      ws.onmessage = async ev => {
+        if (typeof ev.data !== "string") { console.warn("binary frame?"); return; }
+        const res = JSON.parse(ev.data);
+        if (res.status === "error") { showErr(res.msg); return; }
+        msgLine.textContent = res.msg;
+        switch (res.msg) {
+          case "请流式上传数据": await uploadFile(); break;
+          case "传输完毕": sendPipeline(); break;
+          case "<END>": finish(); break;
+          case "<ASR>": handleASR(res); break;
+          case "<TRANS>":
+          case "<SV>": handleASR(res); break;
+          default: msgLine.textContent = res.msg;
+        }
+        if (res.progress !== null) progress(asrBar, res.progress);
+      };
+
+      ws.onerror = () => showErr("WebSocket error");
+      ws.onclose = e => console.log("WS closed", e);
+    };
+
+    function send(obj) { ws.send(JSON.stringify(obj)); }
+    function showErr(m) { msgLine.textContent = "错误: " + m; startBtn.disabled = false; ws && ws.close(); }
+    function initUI() {
+      startBtn.disabled = true; expJson.disabled = expSrt.disabled = expTxt.disabled = true;
+      progress(uploadBar, 0); progress(asrBar, 0); msgLine.textContent = "Connecting...";
+      tbody.innerHTML = ""; rows = {}; finished = false;
+    }
+
+    async function uploadFile() {
+        const chunkSize = 1024 * 1024;
+        const fileObj = file.files[0];
+        const totalSize = fileObj.size;
+        let sent = 0;
+
+        while (sent < totalSize) {
+            const end = Math.min(sent + chunkSize, totalSize);
+            const blob = fileObj.slice(sent, end);
+            const chunk = await blob.arrayBuffer();
+
+            ws.send(chunk);
+            const ack = await nextAck();
+            if (ack.status === "error") {
+            showErr(ack.msg);
+            return;
+            }
+
+            sent = end;
+            progress(uploadBar, sent / totalSize);
+        }
+
+        ws.send(new ArrayBuffer(0)); // 结束信号
+        }
+
+    function nextAck() { return new Promise(r => {
+      const h = e => {
+        if (typeof e.data === "string") { ws.removeEventListener("message", h); r(JSON.parse(e.data)); }
+      };
+      ws.addEventListener("message", h);
+    }); }
+
+    function sendPipeline() {
+      send({
+        uid: UID, task: pipeline(),
+        data: {
+          source_language: null,
+          target_language: tgtSel.value,
+          use_sv: $("use_sv").checked,
+          use_trans: transChk.checked,
+          hotwords: $("hot").value.trim().split(/\s+/)
+        }
+      });
+    }
+
+    function handleASR(res) {
+      const { msg, result } = res;
+      if (msg === "<ASR>") {
+        rows[result.id] = { ...rows[result.id], id: result.id, start: result.start, end: result.end, text: result.text };
+        upsertRow(rows[result.id]);
+      }
+      if (msg === "<TRANS>" || msg === "<SV>") {
+        for (const id in result) {
+          rows[id] = { ...rows[id], id, ...(msg === "<TRANS>" ? { trans: result[id] } : { role: result[id] }) };
+          upsertRow(rows[id]);
+        }
+      }
+    }
+
+    function finish() {
+      finished = true; ws.close(); startBtn.disabled = false;
+      expJson.disabled = expSrt.disabled = expTxt.disabled = false;
+      msgLine.textContent = "识别完成";
+    }
+
+    /* ---------- 导出 ---------- */
+    function exportFile(e) {
+      const id = e.currentTarget.id;
+      const list = [...tbody.children].map(tr => {
+        const cells = [...tr.children];
+        return {
+          start: parseFloat(cells[1].firstElementChild.value),
+          end: parseFloat(cells[2].firstElementChild.value),
+          role: cells[3].textContent.trim(),
+          text: cells[4].textContent.trim(),
+          trans: cells[5].textContent.trim()
+        };
+      });
+
+      if (id === "expJson") {
+        download(new Blob([JSON.stringify(list, null, 2)], { type: "application/json" }), "result.json");
+      } else if (id === "expSrt") {
+        let srt = "";
+        list.forEach((e, i) => {
+          let txt = e.text.trim();
+          if (e.trans) txt += `\n(${e.trans.trim()})`;
+          srt += `${i + 1}\n${srtTime(e.start)} --> ${srtTime(e.end)}\n${txt}\n\n`;
+        });
+        download(new Blob([srt], { type: "text/plain" }), "result.srt");
+      } else {
+        const lines = list.map(e => e.text).join(" ");
+        const trans = list.map(e => e.trans).filter(Boolean).join(" ");
+        download(new Blob([lines + (trans ? `\n${trans}` : "")], { type: "text/plain" }), "result.txt");
+      }
+    }
+
+    // 按钮绑定
+    expJson.addEventListener("click", exportFile);
+    expSrt.addEventListener("click", exportFile);
+    expTxt.addEventListener("click", exportFile);
+  </script>
+</body>
+</html>
