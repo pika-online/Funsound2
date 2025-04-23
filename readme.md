@@ -24,8 +24,7 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 
 ### Step 1: 下载模型
 ```bash
-## 个人使用python==3.10环境
-
+# 个人使用python==3.10环境
 # 注意: pip install modelscope==1.10
 python download_models.py
 ```
@@ -56,7 +55,7 @@ python -m funsound.web.server
 
 ### Python 客户端
 ```bash
-python client.py
+python client.py # 自行修改ws地址 和 音频路径 进行测试。
 ```
 
 ### 网页客户端
