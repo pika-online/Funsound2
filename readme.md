@@ -5,13 +5,15 @@
 
 官网：[https://www.funsound.cn](https://www.funsound.cn)
 
+魔塔：https://modelscope.cn/studios/QuadraV/FunSound
+
 ## 1. 特性
 
 Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别方案，构建了一个高效的语音识别部署系统。Funsound2 基于 **WebSocket** 协议进行语音上传和实时结果返回。
 
 ### 主要特性：
 - 面向多路的异步并发服务端设计
-- 继承 **Whisper** 和 **Funasr** 等 **SOTA**（state-of-the-art）开源模型
+- 集成 **Whisper** 和 **Funasr** 等 **SOTA**（state-of-the-art）开源模型
 - 支持 **时间戳**、**热词**、**声纹** 和 **多语言翻译** 等功能
 
 <img src="./img/demo.gif" alt="Demo" width="400" height="200">
