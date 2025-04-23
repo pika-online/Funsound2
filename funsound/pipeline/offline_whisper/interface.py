@@ -3,7 +3,6 @@ from funsound.engine.whisper.interface import WhisperEngine
 from funsound.engine.funasr.sv.interface import SVEngine
 from funsound.brain.translator.interface import Translator
 from funsound.utils import *
-from funasr.models.campplus.cluster_backend import ClusterBackend,UmapHdbscan
 from funsound.pipeline.base import Diarization,recv_one,recv_many
 from funsound.brain.translator.languages import LANGUAGES_WHISPER
 from funsound.config import *

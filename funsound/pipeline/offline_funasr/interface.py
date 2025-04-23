@@ -6,7 +6,6 @@ from funsound.brain.translator.interface import Translator
 from funsound.pipeline.base import Diarization,recv_one,recv_many
 from funsound.utils import *
 from .core import *
-from funasr.models.campplus.cluster_backend import ClusterBackend,UmapHdbscan
 
 
 
