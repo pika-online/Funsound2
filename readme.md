@@ -13,7 +13,7 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 
 ### 主要特性：
 - 面向多路的异步并发服务端设计
-- 集成 **Whisper** 和 **Funasr** 等 **SOTA**（state-of-the-art）开源模型
+- 集成 **Whisper** 和 **Funasr** 等 **SOTA**开源模型
 - 支持 **时间戳**、**热词**、**声纹** 和 **多语言翻译** 等功能
 
 <img src="./img/demo.gif" alt="Demo" width="400" height="200">
@@ -24,14 +24,18 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 
 ### Step 1: 下载模型
 ```bash
+## 个人使用python==3.10环境
+
+# 注意: pip install modelscope==1.10
 python download_models.py
 ```
 
-### Step 2: 安装相关包并指定 ffmpeg 位置
-请参考 `funsound.lib` 进行设置。
+### Step 2: 依赖库
+请参考 `funsound.lib`自行安装。
+
 
 ### Step 3: 修改配置
-请参考 `funsound.config` 进行配置文件修改。
+请参考 `funsound.config` 自行配置。
 
 ---
 
