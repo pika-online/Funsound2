@@ -1,5 +1,4 @@
 from speakerlab.bin.infer_sv import *
-import subprocess
 
 
 def export( cache_dir,model_id, device='cpu'):

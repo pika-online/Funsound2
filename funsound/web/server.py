@@ -37,7 +37,7 @@ async def handle_client(websocket):
     address = f"{client_ip}_{client_port}"
 
     session_id = generate_random_string(20)
-    messager = Messager(session_id=session_id, ws=websocket, debug=True)
+    messager = Messager(session_id=session_id, ws=websocket, debug=False)
     message_timestamps = []
 
     userId = ''

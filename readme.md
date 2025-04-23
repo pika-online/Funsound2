@@ -39,6 +39,11 @@ python download_models.py
 
 ```bash
 python -m funsound.web.server
+
+# 后台运行
+# bash launch.sh
+# 杀掉后台
+# bash launch.sh -k
 ```
 
 ---
