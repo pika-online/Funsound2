@@ -13,7 +13,7 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 
 ### 主要特性：
 - 面向多路的异步并发服务端设计
-- 继承 **Whisper** 和 **Funasr** 等 **SOTA**（state-of-the-art）开源模型
+- 集成 **Whisper** 和 **Funasr** 等 **SOTA**（state-of-the-art）开源模型
 - 支持 **时间戳**、**热词**、**声纹** 和 **多语言翻译** 等功能
 
 <img src="./img/demo.gif" alt="Demo" width="400" height="200">
