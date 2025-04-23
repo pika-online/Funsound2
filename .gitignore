@@ -9,3 +9,4 @@ funasr_models
 prompt.txt
 config.py
 *.pid
+*.m4a

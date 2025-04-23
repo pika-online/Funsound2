@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import json
 import os
+from funsound.brain.translator.languages import LANGUAGES_WHISPER
 
 def clear():
     os.system('clear')
@@ -12,16 +13,6 @@ def string_progress(val):
     return "#" * n + f"({val*100:.1f}%)"
 
 
-SUPPORTED_TRANSLATE_LANGUAGES = {
-    'funasr':{
-        'source_language': ['Chinese'],
-        'target_language': ['Chinese','English, Japanese','Korean'],
-    },
-    'whisper':{
-        'source_language': [None,'Chinese','English, Japanese','Korean'],
-        'target_language': ['Chinese','English', 'Japanese','Korean'],
-    },
-}
 
 async def asr(uri, 
               file_path, 
@@ -30,7 +21,6 @@ async def asr(uri,
               hotwords = [],
               use_sv = False,
               use_trans = False,
-              source_language=None, 
               target_language=None,):
     
     async with websockets.connect(uri, max_size=None) as websocket:
@@ -81,14 +71,13 @@ async def asr(uri,
 
         # Step 3: 开始转写
         if use_trans:
-            assert source_language in SUPPORTED_TRANSLATE_LANGUAGES[pipeline]['source_language']
-            assert target_language in SUPPORTED_TRANSLATE_LANGUAGES[pipeline]['target_language']
+            assert target_language in LANGUAGES_WHISPER
 
         message = {
             "uid": uid,
             "task": pipeline,
             "data": {
-                "source_language": source_language,
+                "source_language": None,
                 "target_language": target_language,
                 "use_sv": use_sv,
                 "use_trans": use_trans,
@@ -139,12 +128,12 @@ async def asr(uri,
 
 if __name__ == "__main__":
 
-    uri = "ws://js1.blockelite.cn:15576/"  # 根据你的服务端端口修改
-    file_path = "test1.wav"    # 替换成你要上传的文件路径
+    uri = "ws://localhost:8800"  # 根据你的服务端端口修改
+    file_path = "test.m4a"    # 替换成你要上传的文件路径
 
     asyncio.run(asr(uri, 
                     file_path, 
-                    pipeline='whisper',
+                    pipeline='funasr',
                     use_sv=True,
                     use_trans=True,
                     target_language='English'))
