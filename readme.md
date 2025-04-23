@@ -4,6 +4,7 @@
 <img src="./img/logo.png" alt="Funsound Logo" width="100" height="100">
 
 官网：[https://www.funsound.cn](https://www.funsound.cn)
+
 魔塔：https://modelscope.cn/studios/QuadraV/FunSound
 
 ## 1. 特性
