@@ -1,5 +1,9 @@
 from funsound.utils import *
 
+FLAG_WAIT = '<WAIT>'
+FLAG_PROCESS = '<PROCESS>'
+FLAG_ERROR = '<ERROR>'
+FLAG_END = '<END>'
 
 class Engine:
     def __init__(self, n, log_file, debug=False):
@@ -49,11 +53,11 @@ class Engine:
         except Exception as e:
             self.log(f"[INFERENCE ERROR] An error occurred during inference: {e}")
             traceback.print_exc()
-            message.put(('<ERROR>', f"{e}"))
+            message.put((FLAG_ERROR, f"{e}"))
         finally:
             # 任务完成后，将模型放回到池中并发送结束消息
             self._pool.put(model)
-            message.put(('<END>', 'Inference completed'))
+            message.put((FLAG_END, 'Inference completed'))
 
 
     def _backend(self):
@@ -98,8 +102,6 @@ class Engine:
         取消已提交但尚未处理的任务。
         """
         self.skip[taskId] = True
-        if taskId in self.messages:
-            del self.messages[taskId]
         self.log(f"[CANCEL] Task {taskId} has been canceled.")
 
 
@@ -111,6 +113,7 @@ class Engine:
     def stop(self):
         """关闭引擎"""
         self.stop_event = True
+        self.backend_thread.join()
 
 
     # TODO: 初始化模型

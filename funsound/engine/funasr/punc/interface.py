@@ -1,4 +1,4 @@
-from funsound.engine.base import Engine
+from funsound.engine.base import *
 from funsound.utils import *
 
 class PuncEngine(Engine):
@@ -26,7 +26,9 @@ class PuncEngine(Engine):
         message.put(('<PROCESS>', result))
 
 
-def test(engine:PuncEngine):
+
+
+def test(engine, start_time):
     """
     测试函数
     """
@@ -37,10 +39,12 @@ def test(engine:PuncEngine):
 
     while True:
         signal, content = engine.messages[taskId].get()
-        print(taskId, signal, content)
-        if signal == '<END>':
+        if signal == FLAG_PROCESS:
+            print(f"[{taskId}] 内容:{content}")
+            pass
+        if signal in [FLAG_END,FLAG_ERROR]:
             break
-    print("[TEST] Test complete for task:", taskId)
+    print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 if __name__ == "__main__":
 
@@ -51,7 +55,8 @@ if __name__ == "__main__":
     engine.start()
 
     # 并行提交多次测试
-    tasks = [threading.Thread(target=test, args=(engine,)) for _ in range(10)]
+    start_time = time.time()
+    tasks = [threading.Thread(target=test, args=(engine,start_time)) for _ in range(10)]
     for task_thread in tasks:
         task_thread.start()
     for task_thread in tasks:
@@ -59,4 +64,3 @@ if __name__ == "__main__":
 
     # 停止引擎
     engine.stop()
-    engine.backend_thread.join()

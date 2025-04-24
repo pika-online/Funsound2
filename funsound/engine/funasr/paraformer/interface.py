@@ -1,4 +1,4 @@
-from funsound.engine.base import Engine
+from funsound.engine.base import *
 from funsound.utils import *
 from .SeacoParaformer import SeacoParaformerPlus
 
@@ -26,35 +26,38 @@ class ParaformerEngine(Engine):
         hotwords = config.get('hotwords', [])
         RESULTS,TIMESTAMPS, AM_SCORES, VALID_TOKEN_LENS, US_ALPHAS, US_PEAKS = model([input_data],
                                                                                      hotwords=' '.join(hotwords))
-        message.put(('<PROCESS>', TIMESTAMPS[0]))
+        message.put((FLAG_PROCESS, TIMESTAMPS[0]))
 
 
-def test(engine:ParaformerEngine):
+def test(engine, start_time):
     """
     测试函数
     """
-    input_data = audio_i2f(read_audio_file('test1.wav'))[:30*16000]
+    input_data = audio_i2f(read_audio_file('./test.wav'))[:30*16000]
     taskId = generate_random_string(10)
 
     engine.submit(taskId=taskId, input_data=input_data)
 
     while True:
         signal, content = engine.messages[taskId].get()
-        print(taskId, signal, content)
-        if signal == '<END>':
+        if signal == FLAG_PROCESS:
+            # print(f"[{taskId}] 内容:{content}")
+            pass
+        if signal in [FLAG_END,FLAG_ERROR]:
             break
-    print("[TEST] Test complete for task:", taskId)
+    print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 if __name__ == "__main__":
 
-    from funsound.config import *
+    from funsound.config import config_paraformer
 
     # 创建并启动引擎
     engine = ParaformerEngine(config=config_paraformer)
     engine.start()
-
+    
     # 并行提交多次测试
-    tasks = [threading.Thread(target=test, args=(engine,)) for _ in range(10)]
+    start_time = time.time()
+    tasks = [threading.Thread(target=test, args=(engine,start_time)) for _ in range(10)]
     for task_thread in tasks:
         task_thread.start()
     for task_thread in tasks:
@@ -62,4 +65,3 @@ if __name__ == "__main__":
 
     # 停止引擎
     engine.stop()
-    engine.backend_thread.join()

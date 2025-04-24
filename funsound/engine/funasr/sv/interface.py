@@ -1,4 +1,4 @@
-from funsound.engine.base import Engine
+from funsound.engine.base import *
 from funsound.utils import *
 from .Embedding import Embedding
 
@@ -21,10 +21,12 @@ class SVEngine(Engine):
     
     def inference_method(self, input_data, model:Embedding, config, message):
         result = model.gen_embedding(input_data)
-        message.put(('<PROCESS>', result))
+        message.put((FLAG_PROCESS, result))
 
 
-def test(engine:SVEngine):
+
+
+def test(engine, start_time):
     """
     测试函数
     """
@@ -35,21 +37,25 @@ def test(engine:SVEngine):
 
     while True:
         signal, content = engine.messages[taskId].get()
-        print(taskId, signal, content)
-        if signal == '<END>':
+        if signal == FLAG_PROCESS:
+            # print(f"[{taskId}] 内容:{content}")
+            pass
+        if signal in [FLAG_END,FLAG_ERROR]:
             break
-    print("[TEST] Test complete for task:", taskId)
+    print(f"[{taskId}] 耗时:{time.time() - start_time}")
+
 
 if __name__ == "__main__":
 
     from funsound.config import *
 
     # 创建并启动引擎
-    engine = SVEngine(config_sv)
+    engine = SVEngine(config=config_sv)
     engine.start()
 
     # 并行提交多次测试
-    tasks = [threading.Thread(target=test, args=(engine,)) for _ in range(10)]
+    start_time = time.time()
+    tasks = [threading.Thread(target=test, args=(engine,start_time)) for _ in range(10)]
     for task_thread in tasks:
         task_thread.start()
     for task_thread in tasks:
