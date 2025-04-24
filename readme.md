@@ -31,8 +31,7 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 conda create -n funsound python=3.10
 conda activate funsound
 pip install -r requirements.txt
-# 安装完毕后，查看funsound.lib是否存在遗漏
-```
+# 安装完毕后，查看funsound.lib是否存在遗漏,同时指定FFMPEG位置
 
 ### Step 2: 下载模型
 ```bash

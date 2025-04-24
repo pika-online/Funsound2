@@ -28,7 +28,7 @@ import sklearn
 import scipy
 
 # audio
-FFMPEG = "ffmpeg/ffmpeg"
+FFMPEG = "ffmpeg"
 import soundfile as sf 
 import kaldi_native_fbank as knf
 
