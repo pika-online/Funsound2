@@ -94,10 +94,10 @@ class Engine:
         if config is None:
             config = {}
 
-        self.tasks.put((taskId, input_data, config))
         self.skip[taskId] = False
         self.messages[taskId] = queue.Queue()
         self.messages[taskId].put(('<WAIT>', 'Waiting for Processor'))
+        self.tasks.put((taskId, input_data, config))
         self.log(f"[SUBMIT] Task {taskId} submitted.")
 
     def cancel(self, taskId):
