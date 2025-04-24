@@ -41,8 +41,6 @@ class FBank(object):
 
 
 
-
-
 class Embedding:
     def __init__(self,
                  model_path,

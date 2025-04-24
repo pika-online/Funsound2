@@ -1,2 +1,13 @@
+--index-url https://mirrors.aliyun.com/pypi/simple
+
 modelscope==1.10
-fuansr
+onnxruntime
+faster_whisper
+soundfile
+kaldi_native_fbank
+websockets
+requests
+pyyaml
+jieba
+scikit-learn
+scipy

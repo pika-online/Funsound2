@@ -1,32 +1,10 @@
-from funasr.models.campplus.cluster_backend import ClusterBackend,UmapHdbscan
-from funsound.engine.base import Engine
+from funsound.engine.funasr.sv.cluster_backend import SpectralCluster, merge_by_cos
+from funsound.engine.base import *
 from funsound.engine.funasr.sv.interface import SVEngine
 from funsound.brain.translator.interface import Translator
 from funsound.brain.translator.languages import LANGUAGES_WHISPER
 from funsound.utils import *
 from funsound.config import *
-
-
-async def recv_one(engine:Engine,taskId):
-    ans = []
-    while 1:
-        signal, content = engine.messages[taskId].get()
-        if signal in ['<END>',"ERROR"]:
-            break
-        else:
-            ans = content
-    return ans
-
-
-async def recv_many(engine:Engine,taskId):
-    while 1:
-        signal, content = engine.messages[taskId].get()
-        if signal in ['<END>',"ERROR"]:
-            break
-        if signal == '<PROCESS>':
-            yield content
-
-
 
 
 
@@ -54,7 +32,6 @@ class Diarization:
             assert self.source_language in list(LANGUAGES_WHISPER.keys()) + [None]
             assert self.target_language in list(LANGUAGES_WHISPER.keys())
 
-        self.cb_model = ClusterBackend()
         self.translator = translator
         self.sr = 16000
         self.trans_task = asyncio.Queue(maxsize=5)
@@ -79,7 +56,7 @@ class Diarization:
         sentence_id = sentence['id']
         svId = generate_random_string(10)
         self.engine_sv.submit(taskId=svId,input_data=sentence_audio)
-        self.embeddings[sentence_id] = await recv_one(self.engine_sv,svId)
+        self.embeddings[sentence_id] = await asyncio.to_thread(recv_one,engine=self.engine_sv,taskId=svId)
 
 
     async def sv_cluster(self):
@@ -88,7 +65,14 @@ class Diarization:
         """
         keys, features = self.embeddings.keys(), self.embeddings.values()
         features = np.array(list(features))
-        cluster_labels = self.cb_model(features,oracle_num=None)
+        nums = features.shape[0]
+        if nums<20:
+            cluster_labels = np.zeros(nums, dtype="int")
+        else:
+            spectral_cluster = SpectralCluster()
+            cluster_labels = spectral_cluster(features, None)
+            cluster_labels = merge_by_cos(cluster_labels, features, cos_thr=0.78)
+
         dz_result = {key:int(label) for key,label in zip(keys,cluster_labels)}
         return dz_result
     
@@ -161,7 +145,6 @@ class Diarization:
             await trans_task
 
         await self.messager.send('success',msg='<END>',progress=1.,completed=True,result=None)
-
     
     
 

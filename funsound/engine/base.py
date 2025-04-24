@@ -5,6 +5,8 @@ FLAG_PROCESS = '<PROCESS>'
 FLAG_ERROR = '<ERROR>'
 FLAG_END = '<END>'
 
+
+
 class Engine:
     def __init__(self, n, log_file, debug=False):
         self._pool = queue.Queue()
@@ -16,6 +18,7 @@ class Engine:
         self.debug = debug
         self.stop_event = False
         self.backend_thread = None
+        self.lock = threading.Lock()
         mkfile(self.log_file)
 
         for i in range(n):
@@ -123,3 +126,23 @@ class Engine:
     # TODO: 实现推理过程
     def inference_method(self, input_data, model, config, message):
         pass
+
+
+def recv_one(engine:Engine,taskId):
+    ans = []
+    while 1:
+        signal, content = engine.messages[taskId].get()
+        if signal in [FLAG_END,FLAG_ERROR]:
+            break
+        else:
+            ans = content
+    return ans
+
+
+def recv_many(engine:Engine,taskId):
+    while 1:
+        signal, content = engine.messages[taskId].get()
+        if signal in [FLAG_END,FLAG_ERROR]:
+            break
+        if signal == FLAG_PROCESS:
+            yield content

@@ -3,11 +3,11 @@ from funsound.engine.funasr.punc.interface import PuncEngine,Engine
 from funsound.pipeline.base import *
 
 class PuncBreaker:
-    def __init__(self, punc_engine:PuncEngine):
+    def __init__(self, engine_punc:PuncEngine):
         self.pause_threshold = float('inf')
         self.punctuation_list = ["_", "，", "。", "？", "、"]
         self.punctuation_eos_list = ["。", "？","，"]
-        self.punc_engine = punc_engine
+        self.engine_punc = engine_punc
 
     def segment_string_to_list( self,input_str):
         """将字符串分割成单词列表，标点符号与前一个单词连接"""
@@ -79,9 +79,9 @@ class PuncBreaker:
         # 标点预测
         current_text = " ".join(current_words)
 
-        taskId = generate_random_string(10)
-        self.punc_engine.submit(taskId,current_text)
-        current_text_with_punc = await recv_one(self.punc_engine,taskId)
+        puncId = generate_random_string(10)
+        self.engine_punc.submit(puncId,current_text)
+        current_text_with_punc = await asyncio.to_thread(recv_one,engine=self.engine_punc,taskId=puncId)
 
         if current_text_with_punc[-1] in self.punctuation_list: # 尾部标点省去
             current_text_with_punc = current_text_with_punc[:-1]

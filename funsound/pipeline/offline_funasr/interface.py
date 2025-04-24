@@ -44,7 +44,7 @@ class Noxus(Diarization):
             # 语音识别: 热词 + 时间戳 (单窗)
             asrId = generate_random_string(10)
             self.engine_asr.submit(taskId=asrId,input_data=window,config={'hotwords':self.hotwords})
-            result_asr = await recv_one(self.engine_asr,asrId)
+            result_asr = await asyncio.to_thread(recv_one,engine=self.engine_asr,taskId=asrId)
             for item in result_asr:
                 item[1] += window_count*window_seconds
                 item[2] += window_count*window_seconds
@@ -103,14 +103,15 @@ async def main():
         engine_asr=engine_paraformer,
         engine_punc=engine_punc,
         engine_sv=engine_sv,
+        translator=Translator(account=llm_account),
         messager=messager,
         hotwords=[],
         use_sv=True,
         use_trans=True,
-        source_language='Chinese',
+        source_language=None,
         target_language='Japanese'
     )
-    await noxus.run('test1.wav')
+    await noxus.run('test.wav')
     
 
 

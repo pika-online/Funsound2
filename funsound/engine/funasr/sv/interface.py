@@ -35,13 +35,9 @@ def test(engine, start_time):
 
     engine.submit(taskId=taskId, input_data=input_data)
 
-    while True:
-        signal, content = engine.messages[taskId].get()
-        if signal == FLAG_PROCESS:
-            # print(f"[{taskId}] 内容:{content}")
-            pass
-        if signal in [FLAG_END,FLAG_ERROR]:
-            break
+    result = recv_one(engine,taskId)
+    # print(result)
+
     print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 

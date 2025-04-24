@@ -1,6 +1,6 @@
 from funsound.engine.base import *
 from funsound.utils import *
-from .SeacoParaformer import SeacoParaformerPlus
+from .core import SeacoParaformer
 
 class ParaformerEngine(Engine):
     def __init__(self, config):
@@ -12,17 +12,15 @@ class ParaformerEngine(Engine):
         )
 
     def build_model(self):
-        model = SeacoParaformerPlus(
-                model_dir=self.config['model_id'],
-                cache_dir=self.config['cache_dir'],
-                quantize=self.config['quantize'],
+        model = SeacoParaformer(
+                model_dir=f"{self.config['cache_dir']}/{self.config['model_id']}",
                 intra_op_num_threads=self.config['intra_op_num_threads'],
                 batch_size=1,
-                device=self.config['device']
+                device_id=self.config['device']
             )
         return model
     
-    def inference_method(self, input_data, model:SeacoParaformerPlus, config, message):
+    def inference_method(self, input_data, model:SeacoParaformer, config, message):
         hotwords = config.get('hotwords', [])
         RESULTS,TIMESTAMPS, AM_SCORES, VALID_TOKEN_LENS, US_ALPHAS, US_PEAKS = model([input_data],
                                                                                      hotwords=' '.join(hotwords))
@@ -37,14 +35,9 @@ def test(engine, start_time):
     taskId = generate_random_string(10)
 
     engine.submit(taskId=taskId, input_data=input_data)
+    result = recv_one(engine,taskId)
+    # print(result)
 
-    while True:
-        signal, content = engine.messages[taskId].get()
-        if signal == FLAG_PROCESS:
-            # print(f"[{taskId}] 内容:{content}")
-            pass
-        if signal in [FLAG_END,FLAG_ERROR]:
-            break
     print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 if __name__ == "__main__":

@@ -14,14 +14,14 @@ llm_account = {
 #    paraformer
 #################
 config_paraformer = {
-    "instances":4, # 实例数目
+    "instances":2, # 实例数目
     "log_file":"logs/engine_paraformer.log",
     "debug": True,
     'cache_dir':model_dir,
     'model_id':"QuadraV/funasr_seaco_paraformer_onnx_with_timestamp",
     'quantize':True,
-    'intra_op_num_threads':2,
-    'device':-1
+    'intra_op_num_threads':4,
+    'device':"-1"
 }
 
 
@@ -36,14 +36,14 @@ config_punc = {
     'model_id':"csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12",
     'quantize':False,
     'intra_op_num_threads':2,
-    'device':-1
+    'device':"-1"
 }
 
 ##################
 #    声纹
 #################
 config_sv = {
-    'instances':4, # 实例数
+    'instances':2, # 实例数
     "log_file":'logs/engine_sv.log',
     'debug': False,
     'cache_dir':model_dir,

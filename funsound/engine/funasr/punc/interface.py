@@ -1,5 +1,6 @@
 from funsound.engine.base import *
 from funsound.utils import *
+from .core import CT_Transformer
 
 class PuncEngine(Engine):
     def __init__(self, config):
@@ -11,19 +12,17 @@ class PuncEngine(Engine):
         )
 
     def build_model(self):
-        model = funasr_onnx.CT_Transformer(
-                model_dir=self.config['model_id'],
-                cache_dir=self.config['cache_dir'],
+        model = CT_Transformer(
+                model_dir=f"{self.config['cache_dir']}/{self.config['model_id']}",
                 quantize=self.config['quantize'],
                 intra_op_num_threads=self.config['intra_op_num_threads'],
-                batch_size=1,
                 device=self.config['device']
             )
         return model
     
-    def inference_method(self, input_data, model:funasr_onnx.CT_Transformer, config, message):
+    def inference_method(self, input_data, model:CT_Transformer, config, message):
         result = model(input_data)[0]
-        message.put(('<PROCESS>', result))
+        message.put((FLAG_PROCESS, result))
 
 
 
@@ -37,13 +36,8 @@ def test(engine, start_time):
 
     engine.submit(taskId=taskId, input_data=input_data)
 
-    while True:
-        signal, content = engine.messages[taskId].get()
-        if signal == FLAG_PROCESS:
-            print(f"[{taskId}] 内容:{content}")
-            pass
-        if signal in [FLAG_END,FLAG_ERROR]:
-            break
+    result = recv_one(engine,taskId)
+    print(result)
     print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 if __name__ == "__main__":

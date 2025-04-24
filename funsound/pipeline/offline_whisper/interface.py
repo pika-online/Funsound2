@@ -23,6 +23,10 @@ class Demacia(Diarization):
         super().__init__(taskId, engine_sv, translator,messager, hotwords, use_sv, use_trans, source_language, target_language)
         self.engine_asr = engine_asr
 
+    async def G(self,taskId):
+        for sentence in recv_many(self.engine_asr,taskId):
+            yield sentence
+
     async def sentence_generator(self, audio_data):
         audio_size = len(audio_data)
         audio_seconds = audio_size/self.sr
@@ -32,7 +36,7 @@ class Demacia(Diarization):
                                                                           'task':'transcribe',
                                                                           'language':LANGUAGES_WHISPER[self.source_language] if self.source_language else None})
         sentence_count = 0
-        async for sentence in recv_many(self.engine_asr,asrId):
+        async for sentence in self.G(taskId=asrId):
             sentenceId = f"{self.taskId}_{sentence_count}"
             sentence['id'] = sentenceId
             sentence_count += 1
@@ -51,14 +55,15 @@ async def main():
         taskId=generate_random_string(10),
         engine_asr=engine_whisper,
         engine_sv=engine_sv,
+        translator=Translator(account=llm_account),
         messager=messager,
         hotwords=[],
         use_sv=True,
         use_trans=True,
-        source_language='Chinese',
+        source_language=None,
         target_language='English'
     )
-    await demacia.run('test1.wav')
+    await demacia.run('test.wav')
     
 
 

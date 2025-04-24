@@ -21,10 +21,11 @@ from pathlib import Path
 
 # machine learn
 import numpy as np
-import funasr 
-import funasr_onnx
 import onnxruntime
 import faster_whisper
+import jieba 
+import sklearn
+import scipy
 
 # audio
 FFMPEG = "ffmpeg/ffmpeg"

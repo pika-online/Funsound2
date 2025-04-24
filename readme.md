@@ -20,24 +20,27 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 
 
 ### 更新日志
-- 2025/04/20 发布初版funsound框架
+- 2025/04/20 发布初版funsound源码
+- 2025/04/25 优化精简代码，去除torch/funasr等冗余库和代码
 ---
 
 ## 2. 安装
 
-### Step 1: 下载模型
+### Step 1: 创建环境
 ```bash
-# 个人使用python==3.10环境
-# 注意: 由于新版 modelscope 无法下载一些model_id, 尝试安装旧版:pip install modelscope==1.10 
+conda create -n funsound python=3.10
+conda activate funsound
+pip install -r requirements.txt
+# 安装完毕后，查看funsound.lib是否存在遗漏
+```
+
+### Step 2: 下载模型
+```bash
 python download_models.py
 ```
 
-### Step 2: 依赖库
-请参考 `funsound.lib`自行安装。
-
-
 ### Step 3: 修改配置
-请参考 `funsound.config` 自行配置。
+请参考 `funsound.config` 自行修改服务配置。
 
 ---
 

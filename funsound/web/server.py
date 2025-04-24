@@ -9,6 +9,7 @@ from funsound.pipeline.offline_whisper.interface import Demacia
 from funsound.config import *
 from .database import *
 from websockets import serve
+mkdir('logs',reset=True)
 
 """
 ENGINE
@@ -181,7 +182,7 @@ async def main():
     启动WebSocket服务器
     """
 
-    mkdir('logs',reset=True)
+    
     port = int(sys.argv[1])
     async with serve(handle_client, "0.0.0.0", port, max_size=None):
         print(f"WebSocket server started on ws://0.0.0.0:{port}")

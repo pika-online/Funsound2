@@ -129,7 +129,7 @@ async def asr(uri,
 if __name__ == "__main__":
 
     uri = "ws://localhost:8800"  # 根据你的服务端端口修改
-    file_path = "test.m4a"    # 替换成你要上传的文件路径
+    file_path = "test.wav"    # 替换成你要上传的文件路径
 
     asyncio.run(asr(uri, 
                     file_path, 

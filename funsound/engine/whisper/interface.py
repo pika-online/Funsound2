@@ -1,4 +1,4 @@
-from funsound.engine.base import Engine
+from funsound.engine.base import *
 from funsound.utils import *
 
 
@@ -42,26 +42,24 @@ class WhisperEngine(Engine):
                 'end': segment.end,
                 'text': segment.text,
             }
-            message.put(('<PROCESS>', asr_result))
+            message.put((FLAG_PROCESS, asr_result))
 
     
 
 
-def test(engine:WhisperEngine):
+def test(engine:WhisperEngine,start_time):
     """
     测试函数
     """
-    input_data = read_audio_file('test1.wav')[:30*16000]
+    input_data = read_audio_file('test.wav')
     taskId = generate_random_string(10)
 
     engine.submit(taskId=taskId, input_data=input_data)
 
-    while True:
-        signal, content = engine.messages[taskId].get()
-        print(taskId, signal, content)
-        if signal == '<END>':
-            break
-    print("[TEST] Test complete for task:", taskId)
+    for result in recv_many(engine,taskId):
+        print(result)
+
+    print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 
 if __name__ == "__main__":
@@ -73,7 +71,8 @@ if __name__ == "__main__":
     engine.start()
 
     # 并行提交多次测试
-    tasks = [threading.Thread(target=test, args=(engine,)) for _ in range(10)]
+    start_time = time.time()
+    tasks = [threading.Thread(target=test, args=(engine,start_time)) for _ in range(2)]
     for task_thread in tasks:
         task_thread.start()
     for task_thread in tasks:
