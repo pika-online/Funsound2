@@ -1,6 +1,6 @@
 
 
-# Funsound 多路语音识别
+# Funsound 多路语音识别服务搭建
 <img src="./img/logo.png" alt="Funsound Logo" width="100" height="100">
 
 官网：[https://www.funsound.cn](https://www.funsound.cn)
@@ -32,6 +32,7 @@ conda create -n funsound python=3.10
 conda activate funsound
 pip install -r requirements.txt
 # 安装完毕后，查看funsound.lib是否存在遗漏,同时指定FFMPEG位置
+```
 
 ### Step 2: 下载模型
 ```bash
