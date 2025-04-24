@@ -5,7 +5,6 @@ import shutil
 import datetime
 import queue
 import threading
-import multiprocessing as mp 
 import traceback
 import subprocess
 import string 
@@ -25,12 +24,12 @@ import numpy as np
 import funasr 
 import funasr_onnx
 import onnxruntime
-import torch 
 import faster_whisper
 
 # audio
 FFMPEG = "ffmpeg/ffmpeg"
 import soundfile as sf 
+import kaldi_native_fbank as knf
 
 # web
 import ssl 

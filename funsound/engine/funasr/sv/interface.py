@@ -1,6 +1,6 @@
 from funsound.engine.base import *
 from funsound.utils import *
-from .Embedding import Embedding
+from .core import Embedding
 
 class SVEngine(Engine):
     def __init__(self, config):

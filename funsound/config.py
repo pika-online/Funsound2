@@ -47,7 +47,7 @@ config_sv = {
     "log_file":'logs/engine_sv.log',
     'debug': False,
     'cache_dir':model_dir,
-    'model_id':"iic/speech_eres2net_large_sv_zh-cn_3dspeaker_16k",
+    'model_id':"QuadraV/speech_eres2net_large_sv_zh-cn_3dspeaker_16k_onnx",
     'intra_op_num_threads':2,
     'device':-1
 }
