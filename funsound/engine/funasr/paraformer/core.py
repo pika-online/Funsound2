@@ -283,7 +283,7 @@ if __name__ == "__main__":
     model = SeacoParaformer(model_dir=r"models/QuadraV/funasr_seaco_paraformer_onnx_with_timestamp")
     for _ in range(10):
         with Timer() as t:
-            result = model([pcm_data],hotwords='小鸿小鸿 派9')
+            result = model([pcm_data],hotwords='阿里巴巴 凤凰传棋')
         print(t.interval)
         # print(result[1][0])
 
