@@ -47,7 +47,7 @@ python download_models.py
 ## 3. 启动服务
 
 ```bash
-python -m funsound.web.server
+python -m funsound.web.server 8800
 
 # 后台运行
 # bash launch.sh
