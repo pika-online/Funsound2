@@ -84,18 +84,7 @@ class Noxus(Diarization):
             
 
 
-
-
-async def main():
-    
-    engine_paraformer = ParaformerEngine(config=config_paraformer)
-    engine_punc = PuncEngine(config=config_punc)
-    engine_sv = SVEngine(config=config_sv)
-    engine_paraformer.start()
-    engine_punc.start()
-    engine_sv.start()
-
-
+async def test(engine_paraformer,engine_punc,engine_sv):
     messager = Messager(session_id=generate_random_string(10),debug=True)
     messager.task = '<FUNASR>'
     noxus = Noxus(
@@ -112,6 +101,22 @@ async def main():
         target_language='Japanese'
     )
     await noxus.run('test.wav')
+
+
+async def main():
+    
+    engine_paraformer = ParaformerEngine(config=config_paraformer)
+    engine_punc = PuncEngine(config=config_punc)
+    engine_sv = SVEngine(config=config_sv)
+    engine_paraformer.start()
+    engine_punc.start()
+    engine_sv.start()
+
+    # 测试多路转写
+    n = 2
+    tasks = [asyncio.create_task(test(engine_paraformer,engine_punc,engine_sv)) for i in range(n)]
+    results = await asyncio.gather(*tasks)
+    
     
 
 

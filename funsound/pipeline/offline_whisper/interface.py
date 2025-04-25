@@ -42,13 +42,8 @@ class Demacia(Diarization):
             sentence_count += 1
             yield sentence
 
-async def main():
-    
-    engine_whisper = WhisperEngine(config=config_whisper)
-    engine_sv = SVEngine(config=config_sv)
-    engine_whisper.start()
-    engine_sv.start()
 
+async def test(engine_whisper,engine_sv):
     messager = Messager(session_id=generate_random_string(10),debug=True)
     messager.task = '<WHISPER>'
     demacia = Demacia(
@@ -64,6 +59,21 @@ async def main():
         target_language='English'
     )
     await demacia.run('test.wav')
+
+
+async def main():
+    
+    engine_whisper = WhisperEngine(config=config_whisper)
+    engine_sv = SVEngine(config=config_sv)
+    engine_whisper.start()
+    engine_sv.start()
+
+    
+
+    # 测试多路转写
+    n = 2
+    tasks = [asyncio.create_task(test(engine_whisper,engine_sv)) for i in range(n)]
+    results = await asyncio.gather(*tasks)
     
 
 
