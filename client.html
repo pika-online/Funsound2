@@ -288,6 +288,31 @@
     table td:nth-child(n+4) {
     text-align: left;
     }
+
+    /* 修改麦克风按钮样式 */
+    .mic-button {
+      margin-left: 10px;
+      background: var(--green);  /* 改为绿色 */
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+      font-size: 0.95rem;  /* 与文件选择按钮保持一致 */
+      display: inline-block;
+      font-weight: normal;
+    }
+
+    .mic-button.recording {
+      background: #ff0000;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -303,6 +328,7 @@
         <div style="height:1auto;">
           <label for="file" class="file-label">选择文件</label>
           <input id="file" type="file" accept="audio/*,video/*">
+          <button id="mic-btn" class="mic-button">麦克风录音</button>
         </div>
 
         <!-- 预览播放器 -->
@@ -643,6 +669,149 @@
     expJson.addEventListener("click", exportFile);
     expSrt.addEventListener("click", exportFile);
     expTxt.addEventListener("click", exportFile);
+
+    /* ---------- 麦克风录音 ---------- */
+    const micBtn = $("mic-btn");
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordingStream = null;
+    let recordingActive = false;
+
+    micBtn.onclick = async () => {
+      if (recordingActive) {
+        stopRecording();
+      } else {
+        try {
+          await startRecording();
+        } catch (err) {
+          showErr("无法访问麦克风: " + err.message);
+        }
+      }
+    };
+
+    async function startRecording() {
+      // 请求麦克风权限
+      recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // 重置录音数据
+      audioChunks = [];
+      
+      // 更新UI
+      micBtn.textContent = "停止录音";
+      micBtn.classList.add("recording");
+      recordingActive = true;
+      msgLine.textContent = "正在录音...";
+      
+      // 创建MediaRecorder
+      mediaRecorder = new MediaRecorder(recordingStream);
+      
+      // 收集录音数据
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+      
+      // 开始录音
+      mediaRecorder.start(250);
+    }
+
+    async function stopRecording() {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        return;
+      }
+      
+      // 停止录音
+      mediaRecorder.stop();
+      
+      // 等待最后一个数据块
+      await new Promise(resolve => {
+        mediaRecorder.onstop = resolve;
+      });
+      
+      // 释放流资源
+      if (recordingStream) {
+        recordingStream.getTracks().forEach(track => track.stop());
+        recordingStream = null;
+      }
+      
+      // 更新UI - 恢复按钮为绿色
+      micBtn.textContent = "麦克风录音";
+      micBtn.classList.remove("recording");
+      recordingActive = false;
+      
+      // 创建音频Blob并加载到播放器预览
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      player.src = URL.createObjectURL(audioBlob);
+      
+      // 初始化UI准备上传
+      initUI();
+      msgLine.textContent = "正在连接服务器...";
+      
+      // 开始上传流程
+      ws = new WebSocket("wss://funsound.cn/ws/");
+      ws.binaryType = "arraybuffer";
+      
+      ws.onopen = async () => {
+        // 告知服务器要上传录音数据
+        send({ 
+          task: "upload", 
+          uid: UID, 
+          data: { 
+            filename: "microphone_recording.wav"
+          } 
+        });
+      };
+      
+      ws.onmessage = async ev => {
+        if (typeof ev.data !== "string") { console.warn("binary frame?"); return; }
+        const res = JSON.parse(ev.data);
+        if (res.status === "error") { showErr(res.msg); return; }
+        
+        msgLine.textContent = res.msg;
+        switch (res.msg) {
+          case "请流式上传数据": await uploadRecording(); break;
+          case "传输完毕": sendPipeline(); break;
+          case "<END>": finish(); break;
+          case "<ASR>": handleASR(res); break;
+          case "<TRANS>":
+          case "<SV>": handleASR(res); break;
+          default: msgLine.textContent = res.msg;
+        }
+        
+        if (res.progress !== null) progress(asrBar, res.progress);
+      };
+      
+      ws.onerror = () => showErr("WebSocket error");
+      ws.onclose = e => console.log("WS closed", e);
+    }
+
+    // 上传录音数据
+    async function uploadRecording() {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const chunkSize = 1024 * 1024; // 1MB
+      const totalSize = audioBlob.size;
+      let sent = 0;
+      
+      while (sent < totalSize) {
+        const end = Math.min(sent + chunkSize, totalSize);
+        const chunk = audioBlob.slice(sent, end);
+        const buffer = await chunk.arrayBuffer();
+        
+        ws.send(buffer);
+        const ack = await nextAck();
+        if (ack.status === "error") {
+          showErr(ack.msg);
+          return;
+        }
+        
+        sent = end;
+        progress(uploadBar, sent / totalSize);
+      }
+      
+      // 发送结束信号
+      ws.send(new ArrayBuffer(0));
+    }
   </script>
 </body>
 </html>
