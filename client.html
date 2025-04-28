@@ -485,7 +485,10 @@
 
     /* ---------- 选择文件 预览 ---------- */
     file.onchange = () => {
-      if (file.files[0]) player.src = URL.createObjectURL(file.files[0]);
+      if (file.files[0]) {
+        player.src = URL.createObjectURL(file.files[0]);
+        audioBlob = null; // 清除录音数据
+      }
     };
 
     /* ---------- 句子表格渲染 ---------- */
@@ -531,13 +534,19 @@
 
     /* ---------- WebSocket 上传 & 识别 ---------- */
     startBtn.onclick = () => {
-      if (!file.files.length) { alert("请先选择文件"); return; }
+      // 检查是否有待处理的数据（文件或录音）
+      if (!file.files.length && !audioBlob) { 
+        alert("请先选择文件或进行麦克风录音"); 
+        return; 
+      }
+      
       initUI();
       ws = new WebSocket("wss://funsound.cn/ws/");
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        send({ task: "upload", uid: UID, data: { filename: file.files[0].name } });
+        const filename = audioBlob ? "microphone_recording.wav" : file.files[0].name;
+        send({ task: "upload", uid: UID, data: { filename: filename } });
       };
 
       ws.onmessage = async ev => {
@@ -546,7 +555,13 @@
         if (res.status === "error") { showErr(res.msg); return; }
         msgLine.textContent = res.msg;
         switch (res.msg) {
-          case "请流式上传数据": await uploadFile(); break;
+          case "请流式上传数据": 
+            if (audioBlob) {
+              await uploadRecording();
+            } else {
+              await uploadFile();
+            }
+            break;
           case "传输完毕": sendPipeline(); break;
           case "<END>": finish(); break;
           case "<ASR>": handleASR(res); break;
@@ -676,6 +691,7 @@
     let audioChunks = [];
     let recordingStream = null;
     let recordingActive = false;
+    let audioBlob = null; // 新增：保存录音结果
 
     micBtn.onclick = async () => {
       if (recordingActive) {
@@ -695,6 +711,7 @@
       
       // 重置录音数据
       audioChunks = [];
+      audioBlob = null; // 清除之前的录音
       
       // 更新UI
       micBtn.textContent = "停止录音";
@@ -741,54 +758,19 @@
       recordingActive = false;
       
       // 创建音频Blob并加载到播放器预览
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
       player.src = URL.createObjectURL(audioBlob);
       
-      // 初始化UI准备上传
-      initUI();
-      msgLine.textContent = "正在连接服务器...";
-      
-      // 开始上传流程
-      ws = new WebSocket("wss://funsound.cn/ws/");
-      ws.binaryType = "arraybuffer";
-      
-      ws.onopen = async () => {
-        // 告知服务器要上传录音数据
-        send({ 
-          task: "upload", 
-          uid: UID, 
-          data: { 
-            filename: "microphone_recording.wav"
-          } 
-        });
-      };
-      
-      ws.onmessage = async ev => {
-        if (typeof ev.data !== "string") { console.warn("binary frame?"); return; }
-        const res = JSON.parse(ev.data);
-        if (res.status === "error") { showErr(res.msg); return; }
-        
-        msgLine.textContent = res.msg;
-        switch (res.msg) {
-          case "请流式上传数据": await uploadRecording(); break;
-          case "传输完毕": sendPipeline(); break;
-          case "<END>": finish(); break;
-          case "<ASR>": handleASR(res); break;
-          case "<TRANS>":
-          case "<SV>": handleASR(res); break;
-          default: msgLine.textContent = res.msg;
-        }
-        
-        if (res.progress !== null) progress(asrBar, res.progress);
-      };
-      
-      ws.onerror = () => showErr("WebSocket error");
-      ws.onclose = e => console.log("WS closed", e);
+      msgLine.textContent = "录音已完成，请调整识别配置后点击开始识别";
     }
 
-    // 上传录音数据
+    // 增加：上传录音数据的方法
     async function uploadRecording() {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      if (!audioBlob) {
+        showErr("无录音数据");
+        return;
+      }
+      
       const chunkSize = 1024 * 1024; // 1MB
       const totalSize = audioBlob.size;
       let sent = 0;
