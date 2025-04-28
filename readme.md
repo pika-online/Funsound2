@@ -22,6 +22,7 @@ Funsound 整合了 **Funasr**, **Whisper**, 和 **Sherpa** 等开源语音识别
 ### 更新日志
 - 2025/04/20 发布初版funsound源码
 - 2025/04/25 优化精简代码，去除torch/funasr等冗余库和代码
+- 2025/04/29 更新onnxruntime并发机制，构建线程安全复用（⭐）
 ---
 
 ## 2. 安装
