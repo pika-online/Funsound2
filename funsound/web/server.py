@@ -1,8 +1,8 @@
 from funsound.utils import *
 from funsound.engine.whisper.interface import WhisperEngine
-from funsound.engine.funasr.paraformer.interface import ParaformerEngine
-from funsound.engine.funasr.punc.interface import PuncEngine
-from funsound.engine.funasr.sv.interface import SVEngine
+from funsound.engine.funasr.paraformer.interface import SeacoParaformer
+from funsound.engine.funasr.punc.interface import CT_Transformer
+from funsound.engine.funasr.sv.interface import Embedding
 from funsound.brain.translator.interface import Translator
 from funsound.pipeline.offline_funasr.interface import Noxus
 from funsound.pipeline.offline_whisper.interface import Demacia
@@ -14,14 +14,26 @@ mkdir('logs',reset=True)
 """
 ENGINE
 """
+engine_paraformer = SeacoParaformer(
+    model_dir=f"{config_paraformer['cache_dir']}/{config_paraformer['model_id']}",
+    intra_op_num_threads=config_paraformer['intra_op_num_threads'],
+    inter_op_num_threads=config_paraformer['inter_op_num_threads'],
+    deviceId=config_paraformer['deviceId']
+)
+engine_punc = CT_Transformer(
+    model_dir=f"{config_punc['cache_dir']}/{config_punc['model_id']}",
+    intra_op_num_threads=config_punc['intra_op_num_threads'],
+    inter_op_num_threads=config_punc['inter_op_num_threads'],
+    deviceId=config_punc['deviceId']
+)
+engine_sv = Embedding(
+    model_dir=f"{config_sv['cache_dir']}/{config_sv['model_id']}",
+    intra_op_num_threads=config_sv['intra_op_num_threads'],
+    inter_op_num_threads=config_sv['inter_op_num_threads'],
+    deviceId=config_sv['deviceId']
+)
 engine_whisper = WhisperEngine(config=config_whisper)
-engine_paraformer = ParaformerEngine(config=config_paraformer)
-engine_punc = PuncEngine(config=config_punc)
-engine_sv = SVEngine(config=config_sv)
 engine_whisper.start()
-engine_paraformer.start()
-engine_punc.start()
-engine_sv.start()
 
 
 

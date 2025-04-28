@@ -9,6 +9,8 @@ from onnxruntime import (
         get_device,
         ExecutionMode,
     )
+import onnxruntime
+
 
 root_dir = Path(__file__).resolve().parent
 
@@ -131,79 +133,108 @@ class TokenIDConverterError(Exception):
     pass
 
 
-class ONNXRuntimeError(Exception):
-    pass
+
+def time_stamp_lfr6_onnx(us_cif_peak, char_list, begin_time=0.0, total_offset=-1.5):
+
+    if not len(char_list):
+        return []
+    START_END_THRESHOLD = 5
+    MAX_TOKEN_DURATION = 30
+    TIME_RATE = 10.0 * 6 / 1000 / 3  #  3 times upsampled
+    cif_peak = us_cif_peak.reshape(-1)
+    num_frames = cif_peak.shape[-1]
+    if char_list[-1] == '</s>':
+        char_list = char_list[:-1]
+    # char_list = [i for i in text]
+    timestamp_list = []
+    new_char_list = []
+    # for bicif model trained with large data, cif2 actually fires when a character starts
+    # so treat the frames between two peaks as the duration of the former token
+    fire_place = np.where(cif_peak>1.0-1e-4)[0] + total_offset  # np format
+    num_peak = len(fire_place)
+    assert num_peak == len(char_list) + 1 # number of peaks is supposed to be number of tokens + 1
+    # begin silence
+    if fire_place[0] > START_END_THRESHOLD:
+        # char_list.insert(0, '<sil>')
+        timestamp_list.append([0.0, fire_place[0]*TIME_RATE])
+        new_char_list.append('<sil>')
+    # tokens timestamp
+    for i in range(len(fire_place)-1):
+        new_char_list.append(char_list[i])
+        if i == len(fire_place)-2 or MAX_TOKEN_DURATION < 0 or fire_place[i+1] - fire_place[i] < MAX_TOKEN_DURATION:
+            timestamp_list.append([fire_place[i]*TIME_RATE, fire_place[i+1]*TIME_RATE])
+        else:
+            # cut the duration to token and sil of the 0-weight frames last long
+            _split = fire_place[i] + MAX_TOKEN_DURATION
+            timestamp_list.append([fire_place[i]*TIME_RATE, _split*TIME_RATE])
+            timestamp_list.append([_split*TIME_RATE, fire_place[i+1]*TIME_RATE])
+            new_char_list.append('<sil>')
+    # tail token and end silence
+    if num_frames - fire_place[-1] > START_END_THRESHOLD:
+        _end = (num_frames + fire_place[-1]) / 2
+        timestamp_list[-1][1] = _end*TIME_RATE
+        timestamp_list.append([_end*TIME_RATE, num_frames*TIME_RATE])
+        new_char_list.append("<sil>")
+    else:
+        timestamp_list[-1][1] = num_frames*TIME_RATE
+    if begin_time:  # add offset time in model with vad
+        for i in range(len(timestamp_list)):
+            timestamp_list[i][0] = timestamp_list[i][0] + begin_time / 1000.0
+            timestamp_list[i][1] = timestamp_list[i][1] + begin_time / 1000.0
+    assert len(new_char_list) == len(timestamp_list)
+    res_str = ""
+    for char, timestamp in zip(new_char_list, timestamp_list):
+        res_str += "{} {} {};".format(char, timestamp[0], timestamp[1])
+    res = []
+    for char, timestamp in zip(new_char_list, timestamp_list):
+        if char != '<sil>':
+            res.append([int(timestamp[0] * 1000), int(timestamp[1] * 1000)])
+    return res_str, res
 
 
-class OrtInferSession:
-    def __init__(self, model_file, device_id=-1, intra_op_num_threads=4):
-        device_id = str(device_id)
-        sess_opt = SessionOptions()
-        sess_opt.intra_op_num_threads = intra_op_num_threads
-        sess_opt.log_severity_level = 4
-        sess_opt.enable_cpu_mem_arena = False
-        sess_opt.graph_optimization_level = GraphOptimizationLevel.ORT_ENABLE_ALL
-
-        cuda_ep = "CUDAExecutionProvider"
-        cuda_provider_options = {
-            "device_id": device_id,
-            "arena_extend_strategy": "kNextPowerOfTwo",
-            "cudnn_conv_algo_search": "EXHAUSTIVE",
-            "do_copy_in_default_stream": "true",
-        }
-        cpu_ep = "CPUExecutionProvider"
-        cpu_provider_options = {
-            "arena_extend_strategy": "kSameAsRequested",
-        }
-
-        EP_list = []
-        if device_id != "-1" and get_device() == "GPU" and cuda_ep in get_available_providers():
-            EP_list = [(cuda_ep, cuda_provider_options)]
-        EP_list.append((cpu_ep, cpu_provider_options))
-
-        self._verify_model(model_file)
-        self.session = InferenceSession(model_file, sess_options=sess_opt, providers=EP_list)
-
-        if device_id != "-1" and cuda_ep not in self.session.get_providers():
-            warnings.warn(
-                f"{cuda_ep} is not avaiable for current env, the inference part is automatically shifted to be executed under {cpu_ep}.\n"
-                "Please ensure the installed onnxruntime-gpu version matches your cuda and cudnn version, "
-                "you can check their relations from the offical web site: "
-                "https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html",
-                RuntimeWarning,
-            )
-
-    def __call__(self, input_content: List[Union[np.ndarray, np.ndarray]]) -> np.ndarray:
-        input_dict = dict(zip(self.get_input_names(), input_content))
-        try:
-            return self.session.run(self.get_output_names(), input_dict)
-        except Exception as e:
-            raise ONNXRuntimeError("ONNXRuntime inferece failed.") from e
-
-    def get_input_names(
-        self,
-    ):
-        return [v.name for v in self.session.get_inputs()]
-
-    def get_output_names(
-        self,
-    ):
-        return [v.name for v in self.session.get_outputs()]
-
-    def get_character_list(self, key: str = "character"):
-        return self.meta_dict[key].splitlines()
-
-    def have_key(self, key: str = "character") -> bool:
-        self.meta_dict = self.session.get_modelmeta().custom_metadata_map
-        if key in self.meta_dict.keys():
+def process_tokens(tokens):
+        def is_chinese_word(word):
+            for char in word:
+                if not ('\u4e00' <= char <= '\u9fff'):
+                    return False
             return True
-        return False
+        result = []
+        current_word = ''
+        previous_token_type = None  # 'C' for Chinese, 'E' for English
 
-    @staticmethod
-    def _verify_model(model_path):
-        model_path = Path(model_path)
-        if not model_path.exists():
-            raise FileNotFoundError(f"{model_path} does not exists.")
-        if not model_path.is_file():
-            raise FileExistsError(f"{model_path} is not a file.")
+        for token in tokens:
+            if is_chinese_word(token):
+                # Token is a Chinese character
+                if previous_token_type == 'E':
+                    result.append(' ')
+                result.append(token)
+                previous_token_type = 'C'
+            else:
+                # Token is part of an English word
+                token_clean = token.replace('@@', '')
+                current_word += token_clean
+
+                if not token.endswith('@@'):
+                    # End of the English word
+                    if previous_token_type in ('C', 'E') and previous_token_type is not None:
+                        result.append(' ')
+                    result.append(current_word)
+                    current_word = ''
+                    previous_token_type = 'E'
+        ans = ''.join(result)
+        # if ans[-1]==" ":ans = ans[:-1]
+        return ans
+
+
+def pad_list(xs, pad_value, max_len=None):
+    n_batch = len(xs)
+    if max_len is None:
+        max_len = max(x.size(0) for x in xs)
+    # pad = xs[0].new(n_batch, max_len, *xs[0].size()[1:]).fill_(pad_value)
+    # numpy format
+    pad = (np.zeros((n_batch, max_len)) + pad_value).astype(np.int32)
+    for i in range(n_batch):
+        pad[i, : xs[i].shape[0]] = xs[i]
+
+    return pad
 

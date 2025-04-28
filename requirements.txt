@@ -1,7 +1,7 @@
 --index-url https://mirrors.aliyun.com/pypi/simple
 
 modelscope==1.10
-onnxruntime
+onnxruntime-gpu
 faster_whisper
 soundfile
 kaldi_native_fbank

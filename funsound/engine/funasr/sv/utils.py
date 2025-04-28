@@ -1,5 +1,6 @@
 from funsound.utils import *
 from sklearn.cluster._kmeans import k_means
+import onnxruntime as ort
 
 class SpectralCluster:
     r"""A spectral clustering mehtod using unnormalized Laplacian of affinity matrix.
@@ -112,3 +113,40 @@ def merge_by_cos( labels, embs, cos_thr):
                 elif labels[i] > spks[1]:
                     labels[i] -= 1
         return labels
+
+class FBank(object):
+    def __init__(self, n_mels, sample_rate, mean_nor: bool = False):
+        self.n_mels = n_mels
+        self.sample_rate = sample_rate
+        self.mean_nor = mean_nor
+
+        self.opts = knf.FbankOptions()
+        self.opts.frame_opts.samp_freq = sample_rate
+        self.opts.mel_opts.num_bins = n_mels
+        self.opts.frame_opts.dither = 0.0  # 默认不加扰动
+
+    def __call__(self, wav: np.ndarray, dither=0.0) -> np.ndarray:
+        assert self.sample_rate == 16000, "只支持16kHz音频"
+        assert isinstance(wav, np.ndarray), "输入应为 NumPy 数组"
+
+        # 处理多通道音频：取第一个通道
+        if wav.ndim == 2:
+            wav = wav[0, :]
+        assert wav.ndim == 1, "音频必须是一维或[1, T]"
+
+        # 更新扰动参数
+        self.opts.frame_opts.dither = dither
+
+        # 实例化 fbank 提取器
+        fbank = knf.OnlineFbank(self.opts)
+        fbank.accept_waveform(self.sample_rate, wav.astype(np.float32))
+        fbank.input_finished()
+
+        # 提取所有帧
+        feats = [fbank.get_frame(i) for i in range(fbank.num_frames_ready)]
+        feats = np.stack(feats)  # 形状: [T, N]
+
+        if self.mean_nor:
+            feats = feats - np.mean(feats, axis=0, keepdims=True)
+
+        return feats  # 返回 NumPy 数组 [T, n_mels]

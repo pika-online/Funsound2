@@ -6,143 +6,146 @@ FLAG_ERROR = '<ERROR>'
 FLAG_END = '<END>'
 
 
-
 class Engine:
-    def __init__(self, n, log_file, debug=False):
-        self._pool = queue.Queue()
-        self.tasks = queue.Queue()
-        self.skip = {}
-        self.messages = {}
+    def __init__(self, n, log_dir, debug, share_session=False, name=''):
+        self.n = n  # 并发数目
+        self.log_dir = log_dir  # 日志目录
+        self.debug = debug  # 是否显示日志
+        self.share_session = share_session  # 是否共享session
+        self.name = name  # 引擎名
 
-        self.log_file = log_file
-        self.debug = debug
-        self.stop_event = False
-        self.backend_thread = None
-        self.lock = threading.Lock()
-        mkfile(self.log_file)
+        mkdir(self.log_dir)
 
-        for i in range(n):
-            model_instance = self.init_instance()
-            self._pool.put(model_instance)
-            self.log(f"[INIT] Instance #{i+1} created and added to pool.")
+        self.ready = queue.Queue()
+        self.request_queue = queue.Queue()
+        self.cancel_dict = {}
+        self.stop_event = threading.Event()
+        self.workers = []
+        self.messages = {}  # taskId -> (flag, message_queue)
+        self.lock_msg = threading.Lock()
 
-    def log(self, msg):
-        msg = f"[{get_current_time()}]: {msg}"
-        if self.debug:
+        self.session = self.init_session() if self.share_session else None
+
+    def log(self, log_file, workerId, msg, debug=None):
+        """日志输出"""
+        debug = self.debug if debug is None else debug
+        msg = f"[{get_current_time()}][{self.name}][worker-{workerId}]: {msg}"
+        if debug:
             print(msg)
-        with open(self.log_file, 'a', encoding='utf-8') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             print(msg, file=f)
 
-    def init_instance(self):
-        """初始化 Model 实例。"""
-        try:
-            self.log("[MODEL INIT] Initializing Model...")
-            model = self.build_model()
-            self.log("[MODEL INIT] Model initialization complete.")
-            return model
-        except Exception as e:
-            self.log(f"[MODEL INIT ERROR] Failed to initialize Model: {e}")
-            traceback.print_exc()
-            raise e
+    def init_session(self):
+        """初始化模型/会话 (需用户实现)"""
+        pass
 
-    def _inference(self, input_data, model, config, message):
-        """
-        执行具体的识别推理流程，并将结果通过 message 队列传回。
-        """
-        try:
-            self.log("[INFERENCE] Starting inference...")
-            self.inference_method(input_data, model, config, message)
-            self.log("[INFERENCE] Inference finished.")
-        except Exception as e:
-            self.log(f"[INFERENCE ERROR] An error occurred during inference: {e}")
-            traceback.print_exc()
-            message.put((FLAG_ERROR, f"{e}"))
-        finally:
-            # 任务完成后，将模型放回到池中并发送结束消息
-            self._pool.put(model)
-            message.put((FLAG_END, 'Inference completed'))
+    def inference(self, session, input_data, config, message):
+        """推理逻辑 (需用户实现)"""
+        pass
 
+    def work_processor(self, workerId):
+        """后台worker"""
+        log_file = f"{self.log_dir}/mt-{workerId}.log"
+        logger = lambda msg: self.log(log_file, workerId, msg)
 
-    def _backend(self):
-        """
-        后台线程，负责从 tasks 队列中获取任务并分配给空闲的模型实例进行推理。
-        """
-        self.log("[ENGINE] Backend thread started.")
-        while not self.stop_event:
+        logger("启动监听")
+        session = self.session if self.share_session else self.init_session()
+        self.ready.put("Ready")
+
+        while not self.stop_event.is_set():
             try:
-                task = self.tasks.get(timeout=0.1)
+                item = self.request_queue.get(timeout=1)
             except queue.Empty:
-                task = None
+                continue
 
-            if task:
-                taskId, input_data, config = task
-                if not self.skip.get(taskId, False):
-                    model = self._pool.get()
-                    _process = threading.Thread(
-                            target=self._inference,
-                            args=(input_data, model, config, self.messages[taskId])
-                        )
-                    _process.start()
-                else:
-                    self.log(f"[ENGINE] Task {taskId} was skipped.")
-        self.log("[ENGINE] Backend thread stopped.")
+            if item == "STOP":
+                break
 
-    def submit(self, taskId, input_data, config={}):
-        """
-        提交一个推理任务。
-        """
+            taskId, input_data, config = item
+            with self.lock_msg:
+                message = self.messages.get(taskId)
+
+            if not message:
+                logger(f"任务 {taskId} 不存在，跳过")
+                continue
+
+            if self.cancel_dict.pop(taskId, None) is not None:
+                logger(f"任务 {taskId} 已被撤销")
+                continue
+
+            logger(f"开始推理：{taskId}")
+            try:
+                with Timer() as t:
+                    self.inference(session=session, input_data=input_data, config=config, message=message)
+                message.put((FLAG_END, t.interval))
+                logger(f"推理成功，耗时：{t.interval:.2f}s")
+            except Exception as e:
+                message.put((FLAG_ERROR, str(e)))
+                logger(f"推理失败：{str(e)}")
+                traceback.print_exc()
+
+            logger(f"结束任务：{taskId}")
+
+        logger("停止监听")
+
+    def submit(self, taskId, input_data, config=None):
+        """提交推理任务"""
         if config is None:
             config = {}
-
-        self.skip[taskId] = False
-        self.messages[taskId] = queue.Queue()
-        self.messages[taskId].put(('<WAIT>', 'Waiting for Processor'))
-        self.tasks.put((taskId, input_data, config))
-        self.log(f"[SUBMIT] Task {taskId} submitted.")
+        self.request_queue.put((taskId, input_data, config))
+        with self.lock_msg:
+            q = queue.Queue()
+            q.put((FLAG_WAIT, 'Waiting for Processor'))
+            self.messages[taskId] = q
 
     def cancel(self, taskId):
-        """
-        取消已提交但尚未处理的任务。
-        """
-        self.skip[taskId] = True
-        self.log(f"[CANCEL] Task {taskId} has been canceled.")
-
+        """撤销推理任务"""
+        self.cancel_dict[taskId] = True
 
     def start(self):
         """启动引擎"""
-        self.backend_thread = threading.Thread(target=self._backend)
-        self.backend_thread.start()
+        self.workers = [threading.Thread(target=self.work_processor, args=(i,)) for i in range(self.n)]
+        for worker in self.workers:
+            worker.start()
+        for _ in range(self.n):
+            self.ready.get()
+        print(f"[{self.name}] 启动完毕，待命中...")
 
     def stop(self):
         """关闭引擎"""
-        self.stop_event = True
-        self.backend_thread.join()
+        for _ in range(self.n):
+            self.request_queue.put("STOP")
+        self.stop_event.set()
+        for worker in self.workers:
+            worker.join()
 
+    def recv_one(self, taskId):
+        """接收一个完整推理结果"""
+        with self.lock_msg:
+            message = self.messages.get(taskId)
 
-    # TODO: 初始化模型
-    def build_model(self):
-        return None
+        if message is None:
+            raise ValueError(f"Task {taskId} 不存在")
 
-    # TODO: 实现推理过程
-    def inference_method(self, input_data, model, config, message):
-        pass
-
-
-def recv_one(engine:Engine,taskId):
-    ans = []
-    while 1:
-        signal, content = engine.messages[taskId].get()
-        if signal in [FLAG_END,FLAG_ERROR]:
-            break
-        else:
+        ans = []
+        while True:
+            signal, content = message.get()
+            if signal in (FLAG_END, FLAG_ERROR):
+                break
             ans = content
-    return ans
+        return ans
 
+    def recv_many(self, taskId):
+        """接收推理过程中的多个中间结果 (生成器)"""
+        with self.lock_msg:
+            message = self.messages.get(taskId)
 
-def recv_many(engine:Engine,taskId):
-    while 1:
-        signal, content = engine.messages[taskId].get()
-        if signal in [FLAG_END,FLAG_ERROR]:
-            break
-        if signal == FLAG_PROCESS:
-            yield content
+        if message is None:
+            raise ValueError(f"Task {taskId} 不存在")
+
+        while True:
+            signal, content = message.get()
+            if signal in (FLAG_END, FLAG_ERROR):
+                break
+            if signal == FLAG_PROCESS:
+                yield content

@@ -1,9 +1,9 @@
 
-from funsound.engine.funasr.paraformer.interface import ParaformerEngine,Engine
-from funsound.engine.funasr.punc.interface import PuncEngine
-from funsound.engine.funasr.sv.interface import SVEngine
+from funsound.engine.funasr.paraformer.interface import SeacoParaformer
+from funsound.engine.funasr.punc.interface import CT_Transformer
+from funsound.engine.funasr.sv.interface import Embedding
 from funsound.brain.translator.interface import Translator
-from funsound.pipeline.base import Diarization,recv_one,recv_many
+from funsound.pipeline.base import Diarization
 from funsound.utils import *
 from .core import *
 
@@ -12,9 +12,9 @@ from .core import *
 class Noxus(Diarization):
     def __init__(self,
                  taskId, 
-                 engine_asr:ParaformerEngine=None,
-                 engine_punc:PuncEngine=None,
-                 engine_sv:SVEngine=None,
+                 engine_asr:SeacoParaformer=None,
+                 engine_punc:CT_Transformer=None,
+                 engine_sv:Embedding=None,
                  translator:Translator=None, 
                  messager = None, 
                  hotwords = [],
@@ -42,9 +42,8 @@ class Noxus(Diarization):
             window = audio_data[s:e]
 
             # 语音识别: 热词 + 时间戳 (单窗)
-            asrId = generate_random_string(10)
-            self.engine_asr.submit(taskId=asrId,input_data=window,config={'hotwords':self.hotwords})
-            result_asr = await asyncio.to_thread(recv_one,engine=self.engine_asr,taskId=asrId)
+            tmp = await self.engine_asr([window],hotwords=" ".join(self.hotwords))
+            result_asr = tmp[1][0]
             for item in result_asr:
                 item[1] += window_count*window_seconds
                 item[2] += window_count*window_seconds
@@ -96,7 +95,7 @@ async def test(engine_paraformer,engine_punc,engine_sv):
         messager=messager,
         hotwords=[],
         use_sv=True,
-        use_trans=True,
+        use_trans=False,
         source_language=None,
         target_language='Japanese'
     )
@@ -105,17 +104,31 @@ async def test(engine_paraformer,engine_punc,engine_sv):
 
 async def main():
     
-    engine_paraformer = ParaformerEngine(config=config_paraformer)
-    engine_punc = PuncEngine(config=config_punc)
-    engine_sv = SVEngine(config=config_sv)
-    engine_paraformer.start()
-    engine_punc.start()
-    engine_sv.start()
+    engine_paraformer = SeacoParaformer(
+        model_dir=f"{config_paraformer['cache_dir']}/{config_paraformer['model_id']}",
+        intra_op_num_threads=config_paraformer['intra_op_num_threads'],
+        inter_op_num_threads=config_paraformer['inter_op_num_threads'],
+        deviceId=config_paraformer['deviceId']
+    )
+    engine_punc = CT_Transformer(
+        model_dir=f"{config_punc['cache_dir']}/{config_punc['model_id']}",
+        intra_op_num_threads=config_punc['intra_op_num_threads'],
+        inter_op_num_threads=config_punc['inter_op_num_threads'],
+        deviceId=config_punc['deviceId']
+    )
+    engine_sv = Embedding(
+        model_dir=f"{config_sv['cache_dir']}/{config_sv['model_id']}",
+        intra_op_num_threads=config_sv['intra_op_num_threads'],
+        inter_op_num_threads=config_sv['inter_op_num_threads'],
+        deviceId=config_sv['deviceId']
+    )
+
 
     # 测试多路转写
-    n = 2
+    n = 3
     tasks = [asyncio.create_task(test(engine_paraformer,engine_punc,engine_sv)) for i in range(n)]
     results = await asyncio.gather(*tasks)
+    
     
     
 

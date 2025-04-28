@@ -14,51 +14,46 @@ llm_account = {
 #    paraformer
 #################
 config_paraformer = {
-    "instances":2, # 实例数目
-    "log_file":"logs/engine_paraformer.log",
-    "debug": True,
     'cache_dir':model_dir,
-    'model_id':"QuadraV/funasr_seaco_paraformer_onnx_with_timestamp",
-    'quantize':True,
-    'intra_op_num_threads':4,
-    'device':"-1"
+    "model_id":"QuadraV/funasr_seaco_paraformer_onnx_with_timestamp",
+    "intra_op_num_threads":2,
+    "inter_op_num_threads":4, # 设置并发数目
+    "deviceId": "-1",
 }
+
 
 
 ##################
 #    标点
 #################
 config_punc = {
-    'instances':4, # 实例数
-    "log_file":'logs/engine_punc.log',
-    'debug': False,
     'cache_dir':model_dir,
-    'model_id':"csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12",
-    'quantize':False,
-    'intra_op_num_threads':2,
-    'device':"-1"
+    "model_id":"csukuangfj/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12",
+    "intra_op_num_threads":1,
+    "inter_op_num_threads":4, # 设置并发数目
+    "deviceId": "-1",
 }
 
 ##################
 #    声纹
 #################
 config_sv = {
-    'instances':2, # 实例数
-    "log_file":'logs/engine_sv.log',
-    'debug': False,
     'cache_dir':model_dir,
-    'model_id':"QuadraV/speech_eres2net_large_sv_zh-cn_3dspeaker_16k_onnx",
-    'intra_op_num_threads':2,
-    'device':-1
+    "model_id":"QuadraV/speech_eres2net_large_sv_zh-cn_3dspeaker_16k_onnx",
+    "intra_op_num_threads":1,
+    "inter_op_num_threads":4, # 设置并发数目
+    "deviceId": "-1",
 }
 
 ##################
 #    Whisper
 #################
 config_whisper = {
-    'instances':2, # 实例数
-    "log_file":'logs/engine_whisper.log',
-    'debug': False,
+    'n':2, # 设置并发数目
+    "log_dir":'logs/whisper',
+    'debug': True,
+    'share_session':False,
+    'name': 'whisper',
     'cache_dir':model_dir,
     'model_id':"keepitsimple/faster-whisper-large-v3",
     'device':"cuda",

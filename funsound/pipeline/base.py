@@ -1,6 +1,6 @@
-from funsound.engine.funasr.sv.cluster_backend import SpectralCluster, merge_by_cos
+from funsound.engine.funasr.sv.utils import SpectralCluster, merge_by_cos
 from funsound.engine.base import *
-from funsound.engine.funasr.sv.interface import SVEngine
+from funsound.engine.funasr.sv.interface import Embedding
 from funsound.brain.translator.interface import Translator
 from funsound.brain.translator.languages import LANGUAGES_WHISPER
 from funsound.utils import *
@@ -12,7 +12,7 @@ from funsound.config import *
 class Diarization:
     def __init__(self,
                  taskId,
-                 engine_sv:SVEngine = None,
+                 engine_sv:Embedding = None,
                  translator:Translator = None,
                  messager:Messager=None,
                  hotwords:list=[],
@@ -54,10 +54,9 @@ class Diarization:
         s,e = int(self.sr*sentence['start']), int(self.sr*sentence['end'])
         sentence_audio = audio_data[s:e]
         sentence_id = sentence['id']
-        svId = generate_random_string(10)
-        self.engine_sv.submit(taskId=svId,input_data=sentence_audio)
-        self.embeddings[sentence_id] = await asyncio.to_thread(recv_one,engine=self.engine_sv,taskId=svId)
-
+        tmp = await self.engine_sv(sentence_audio)
+        self.embeddings[sentence_id] = tmp[0][0]
+        
 
     async def sv_cluster(self):
         """

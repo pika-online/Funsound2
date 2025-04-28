@@ -6,28 +6,28 @@ from funsound.utils import *
 class WhisperEngine(Engine):
     def __init__(self, config):
         self.config = config
-        super().__init__(
-            n=self.config['instances'], 
-            log_file=self.config['log_file'], 
-            debug=self.config['debug']
-        )
+        super().__init__(self.config['n'], 
+                         self.config['log_dir'], 
+                         self.config['debug'], 
+                         self.config['share_session'],
+                         self.config['name'])
 
 
-    def build_model(self):
-        model = faster_whisper.WhisperModel(
+    def init_session(self):
+        session = faster_whisper.WhisperModel(
                 model_size_or_path=f"{self.config['cache_dir']}/{self.config['model_id']}",
                 device=self.config['device'],
                 compute_type=self.config['compute_type'],
             )
-        return model
+        return session
 
-    def inference_method(self, input_data, model: faster_whisper.WhisperModel, config: dict, message: queue.Queue):
+    def inference(self, session:faster_whisper.WhisperModel, input_data, config, message:queue.Queue):
         language = config.get('language', None)
         task = config.get('task', 'transcribe')
         hotwords = config.get('hotwods', [])
 
         # 调用模型进行识别
-        segments, info = model.transcribe(
+        segments, info = session.transcribe(
             input_data,
             condition_on_previous_text=False,
             language=language,
@@ -44,10 +44,9 @@ class WhisperEngine(Engine):
             }
             message.put((FLAG_PROCESS, asr_result))
 
-    
 
 
-def test(engine:WhisperEngine,start_time):
+def test(engine:WhisperEngine):
     """
     测试函数
     """
@@ -56,10 +55,9 @@ def test(engine:WhisperEngine,start_time):
 
     engine.submit(taskId=taskId, input_data=input_data)
 
-    for result in recv_many(engine,taskId):
+    for result in engine.recv_many(taskId):
         print(result)
 
-    print(f"[{taskId}] 耗时:{time.time() - start_time}")
 
 
 if __name__ == "__main__":
@@ -71,8 +69,7 @@ if __name__ == "__main__":
     engine.start()
 
     # 并行提交多次测试
-    start_time = time.time()
-    tasks = [threading.Thread(target=test, args=(engine,start_time)) for _ in range(2)]
+    tasks = [threading.Thread(target=test, args=(engine,)) for _ in range(2)]
     for task_thread in tasks:
         task_thread.start()
     for task_thread in tasks:
@@ -80,4 +77,3 @@ if __name__ == "__main__":
 
     # 停止引擎
     engine.stop()
-    engine.backend_thread.join()

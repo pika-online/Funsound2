@@ -1,9 +1,9 @@
 
 from funsound.engine.whisper.interface import WhisperEngine
-from funsound.engine.funasr.sv.interface import SVEngine
+from funsound.engine.funasr.sv.interface import Embedding
 from funsound.brain.translator.interface import Translator
 from funsound.utils import *
-from funsound.pipeline.base import Diarization,recv_one,recv_many
+from funsound.pipeline.base import Diarization
 from funsound.brain.translator.languages import LANGUAGES_WHISPER
 from funsound.config import *
 
@@ -12,7 +12,7 @@ class Demacia(Diarization):
     def __init__(self, 
                  taskId, 
                  engine_asr:WhisperEngine, 
-                 engine_sv:SVEngine=None, 
+                 engine_sv:Embedding=None, 
                  translator:Translator=None, 
                  messager = None, 
                  hotwords = [], 
@@ -24,7 +24,7 @@ class Demacia(Diarization):
         self.engine_asr = engine_asr
 
     async def G(self,taskId):
-        for sentence in recv_many(self.engine_asr,taskId):
+        for sentence in self.engine_asr.recv_many(taskId):
             yield sentence
 
     async def sentence_generator(self, audio_data):
@@ -64,9 +64,15 @@ async def test(engine_whisper,engine_sv):
 async def main():
     
     engine_whisper = WhisperEngine(config=config_whisper)
-    engine_sv = SVEngine(config=config_sv)
     engine_whisper.start()
-    engine_sv.start()
+
+    engine_sv = Embedding(
+        model_dir=f"{config_sv['cache_dir']}/{config_sv['model_id']}",
+        intra_op_num_threads=config_sv['intra_op_num_threads'],
+        inter_op_num_threads=config_sv['inter_op_num_threads'],
+        deviceId=config_sv['deviceId']
+    )
+    
 
     
 
@@ -75,7 +81,7 @@ async def main():
     tasks = [asyncio.create_task(test(engine_whisper,engine_sv)) for i in range(n)]
     results = await asyncio.gather(*tasks)
     
-
+    engine_whisper.stop()
 
 if __name__ == "__main__":
 

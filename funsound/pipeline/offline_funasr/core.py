@@ -1,9 +1,9 @@
 from funsound.utils import *
-from funsound.engine.funasr.punc.interface import PuncEngine,Engine
+from funsound.engine.funasr.punc.interface import CT_Transformer
 from funsound.pipeline.base import *
 
 class PuncBreaker:
-    def __init__(self, engine_punc:PuncEngine):
+    def __init__(self, engine_punc:CT_Transformer):
         self.pause_threshold = float('inf')
         self.punctuation_list = ["_", "，", "。", "？", "、"]
         self.punctuation_eos_list = ["。", "？","，"]
@@ -79,9 +79,9 @@ class PuncBreaker:
         # 标点预测
         current_text = " ".join(current_words)
 
-        puncId = generate_random_string(10)
-        self.engine_punc.submit(puncId,current_text)
-        current_text_with_punc = await asyncio.to_thread(recv_one,engine=self.engine_punc,taskId=puncId)
+        tmp = await self.engine_punc(current_text)
+        current_text_with_punc = tmp[0]
+
 
         if current_text_with_punc[-1] in self.punctuation_list: # 尾部标点省去
             current_text_with_punc = current_text_with_punc[:-1]

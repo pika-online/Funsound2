@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     asyncio.run(asr(uri, 
                     file_path, 
-                    pipeline='funasr',
+                    pipeline='whisper',
                     use_sv=True,
                     use_trans=True,
                     target_language='English'))
