@@ -2,7 +2,6 @@ import asyncio
 import websockets
 import json
 import os
-from funsound.brain.translator.languages import LANGUAGES_WHISPER
 
 def clear():
     os.system('clear')
@@ -69,9 +68,6 @@ async def asr(uri,
 
 
 
-        # Step 3: 开始转写
-        if use_trans:
-            assert target_language in LANGUAGES_WHISPER
 
         message = {
             "uid": uid,

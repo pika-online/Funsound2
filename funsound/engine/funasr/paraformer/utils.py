@@ -1,15 +1,6 @@
 # -*- encoding: utf-8 -*-
 
 from funsound.lib import *
-from onnxruntime import (
-        GraphOptimizationLevel,
-        InferenceSession,
-        SessionOptions,
-        get_available_providers,
-        get_device,
-        ExecutionMode,
-    )
-import onnxruntime
 
 
 root_dir = Path(__file__).resolve().parent

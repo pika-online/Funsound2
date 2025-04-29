@@ -1,6 +1,5 @@
 from funsound.utils import *
 from sklearn.cluster._kmeans import k_means
-import onnxruntime as ort
 
 class SpectralCluster:
     r"""A spectral clustering mehtod using unnormalized Laplacian of affinity matrix.
