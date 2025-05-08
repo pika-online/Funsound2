@@ -5,6 +5,8 @@
 
 官网：[https://www.funsound.cn](https://www.funsound.cn)
 
+实时语音识别：https://funsound.cn/2pass.html
+
 魔塔：https://modelscope.cn/studios/QuadraV/FunSound
 
 ## 1. 特性
